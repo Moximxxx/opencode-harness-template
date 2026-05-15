@@ -62,17 +62,6 @@ if (typeof contract.timestamp === 'number') {
     }
 }
 
-// 自定义校验: 文件存在性
-var contractDir = path.dirname('$CONTRACT_FILE');
-var projectRoot = path.resolve(contractDir, '..', '..');
-if (Array.isArray(contract.files_to_modify)) {
-    contract.files_to_modify.forEach(function(f) {
-        if (!fs.existsSync(path.join(projectRoot, f))) {
-            errors.push('/files_to_modify/' + f + ': 文件不存在: ' + f);
-        }
-    });
-}
-
 if (errors.length === 0) {
     console.log('RESULT: PASS 合同验证通过: ' + (contract.task_id || 'unknown'));
     process.exit(0);

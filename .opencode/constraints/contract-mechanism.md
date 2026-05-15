@@ -59,6 +59,21 @@ files_to_modify / constraints / verification / coverage_checklist 字段内容�
 - 合同过期（>30分钟）→ **拦截**
 - 文件不在 `files_to_modify` 中 → **拦截**
 
+### R-06: 完整工作流闭环（强制 — 不可跳过）
+
+每个任务**必须**按顺序走完完整工作流：
+Coordinator → Plan → Contract → Validate → Hooks → Task-Executor → Code-Reviewer →（自动修复循环 ≤3次）→ Builder → Retro → Git。
+
+**违反后果**：
+- 跳过 Plan 阶段直接生成合同 → **违规**，合同无效
+- 跳过 Code-Review 阶段 → **违规**，任务不得标记为 completed
+- 跳过 Retro 阶段 → **违规**，禁止 Git 提交
+- 连续 2 次违规 → Coordinator 必须委派 crash-doctor 诊断流程缺陷
+
+**物理门禁**：
+- `coordinator-guard.sh`：编辑文件前检查是否在 active 合同范围内
+- `workflow-integrity-check.sh`：合同完整性验证（trace_id/constraints 等非空）
+
 ### R-02: 合同必须覆盖所有修改文件
 
 `files_to_modify` 列出的文件是唯一允许修改的范围。
@@ -95,6 +110,14 @@ files_to_modify / constraints / verification / coverage_checklist 字段内容�
 4. **示例**: `contracts/20260510/20260510_FIX_001.json` → `task_id: "FIX-001"`
 
 **注意**: 旧格式的合同文件（直接放在 contracts/ 根目录）将在下次整理时迁移。
+
+### R-08: 合同必须
+
+Task-Executor 仅能修改合同 `files_to_modify` 指定的文件，合同有效期 30 分钟。
+
+### R-15: Hook 文档实现一致性
+
+contract-mechanism.md 的「Hook 目录」中声明的每个 hook 必须有对应的 `.opencode/hooks/{name}.sh` 脚本实现。尚未实现的 hook 必须在文档中显式标注「(未实现)」，且禁止在合同的 hooks 数组中引用未实现的 hook。
 
 ## 验证方法
 
@@ -134,18 +157,18 @@ Hook（钩子/护栏）是任务执行前/后的插桩检查点，遵循统一�
 
 | Hook 名称 | 类型 | 范围 | 检查内容 | 失败行为 |
 |-----------|------|:----:|---------|---------|
-| `post-edit-verify` (未实现) | 🔍 反馈/代码 | 特定 | 语法检查、代码质量检测（TODO/console.log/any） | WARN（代码质量问题） |
+| `post-edit-verify` ✅ | 🔍 反馈/代码 | 特定 | 后置文件存在性验证（区分新建/修改场景） | WARN（文件缺失） |
 | `post-tool-verify` (未实现) | 🔍 反馈/工具 | 特定 | 工具调用输出格式验证、错误分类追踪 | WARN（工具调用异常） |
 | `dual-check-hook` (未实现) | 🔍 反馈/审查 | 特定 | Agent 自验 vs 工具独立校验比较 | WARN（不一致） |
 | `self-improvement-trigger` (未实现) | 🔄 反馈/自愈 | 全局 | 调用 incident-analyzer 触发事故驱动改进循环 | WARN（分析到问题） |
 | `arch-constraint-check` (未实现) | 🔍 反馈/架构 | 特定 | 对修改文件运行架构约束检查（分层违规、any 类型泄漏） | BLOCK（分层违规）、WARN（其他） |
 | `secret-leak-scan` (未实现) | 🔍 反馈/安全 | 特定 | 扫描修改文件中的硬编码密钥 | BLOCK（发现硬编码凭证） |
 | `entropy-cleanup` (未实现) 🔄 | 🧹 治理/回收 | 全局 | 清理临时文件、过期追踪记录 | WARN（清理失败） |
-| `validate-contract` ✅ | 🔍 反馈/合同 | 全局 | JSON Schema 校验 + 合同时效性(30min) + 文件存在性 | BLOCK（Schema 不通过）、WARN（过期） |
+| `validate-contract` ✅ | 🔍 反馈/合同 | 全局 | JSON Schema 校验 + 合同时效性(30min) | BLOCK（Schema 不通过）、WARN（过期） |
 
 ### 已知局限
 
-- **validate-contract 文件存在性检查**: `validate-contract.sh` 中的文件存在性检查对新建文件场景产生误报（BLOCK）。对于 `files_to_modify` 包含新建文件的任务，Coordinator 可在合同验证阶段忽略此类 BLOCK，改为在后置钩子 `post-edit-verify` 中验证。详见事故记录 [INC-20260516-001](../../incidents/INC-20260516-001.md)。
+- **validate-contract 文件存在性检查（已修复）**: 详见事故记录 [INC-20260516-001](../../incidents/INC-20260516-001.md)。修复内容：从 `validate-contract.sh` 移除了文件存在性检查，新建 `post-edit-verify.sh` 承担该职责。此修复遵循 P-04 规范。
 
 ### Hook 执行顺序
 
@@ -171,11 +194,25 @@ Post_task 在 task-executor 返回后按列表顺序执行，全部 PASS 后才�
 ### 完整阶段链
 每个任务必须按顺序经历以下阶段，不可跳过：
 
-| 阶段 | 执行者 | 产物 | 门禁 |
-|------|--------|------|------|
-| Plan | plan | 结构分析报告 | 必须包含 files_to_modify/constraints/verification |
-| Contract | coordinator | 任务合同 JSON | validate-contract 工具 + workflow-integrity-check.sh |
-| Execute | task-executor | 代码修改 + 交接报告 | coordinator-guard.sh（文件范围）+ file-lock-check.sh |
-| Review | code-reviewer | 审查报告 | pass=false 时自动进入修复循环（≤3次） |
-| Build | builder | 构建结果 | requires_build=true 时强制执行 |
-| Retro | retro | 复盘报告 | 所有任务（成功或失败）必须执行 |
+| 阶段 | 执行者 | 合同类型 | 产物 | 门禁 |
+|------|--------|:---:|------|------|
+| Plan | plan | PLAN | 结构分析报告 | 必须包含 files_to_modify/constraints/verification |
+| Contract | coordinator | (主合同) | 任务合同 JSON | validate-contract + workflow-integrity-check |
+| Execute | task-executor | FIX/FEAT/DOCS | 代码修改 + 交接报告 | coordinator-guard + file-lock-check |
+| Review | code-reviewer | REVIEW | 审查报告 | pass=false 时自动修复循环 |
+| Build | builder | BUILD | 构建结果 | requires_build=true 时强制执行 |
+| Retro | retro | RETRO | 复盘报告 | 所有任务必须执行 |
+| Doctor | crash-doctor | DOCTOR | 诊断报告 | 异常/崩溃时触发 |
+
+## 自动修复循环
+
+### R-14: 自动修复循环（Auto-Retry Loop）
+
+code-reviewer 审查发现问题时，Coordinator 应委派 Plan 分析修复方案，基于修复计划生成 fix_contract 并重派 task-executor 修复，最多重试 3 次。超过 3 次则升级为失败，委派 crash-doctor 诊断。每次重试的 fix_contract 必须保留原合同的 trace_id 并递增 retry_count。每次修复的决策由 Plan 驱动。
+
+## Trace ID
+
+### P-02: 全链路 Trace ID
+
+Coordinator 接收用户任务后立即生成全局唯一的 trace_id（UUID 格式），在 Plan 阶段即开始使用，贯穿 Plan → 合同 → Task-Executor → Code-Reviewer → Builder → Retro 全链路。所有子 Agent 的交接/审查/诊断/复盘报告必须携带同一 trace_id。
+→ 适用范围: 所有 Agent（全局）

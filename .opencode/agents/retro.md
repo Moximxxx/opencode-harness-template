@@ -82,15 +82,14 @@ Coordinator 把你委派时传入:
 
 如有事故，必须:
 - 将事故写入独立文件 `.opencode/incidents/{事故编号}.md`
-- 如涉及约束违反，更新 `AGENTS.md` 中的对应约束并引用事故文件路径
-- 如验证脚本漏检，在 `.opencode/scripts/verify_arch.sh` 添加检查项
+- 如涉及约束违反，在复盘结论中输出约束更新建议，由 Coordinator 基于建议生成合同另行委派
+- 如验证脚本漏检，在复盘结论中输出验证增强建议
 
 ### 3. 约束更新
 
 根据复盘结论执行:
 - `NO_ACTION`: 记录但无需更新约束
-- `NEW_CONSTRAINT`: 在 `AGENTS.md` 中新增 P-0x / R-x 规则，创建约束文档
-- `UPDATE_CONSTRAINT`: 修改已有约束文档内容
+- `NEW_CONSTRAINT` / `UPDATE_CONSTRAINT`: 在复盘结论中输出具体建议内容（含新增/修改的规则文本），由 Coordinator 负责后续合同委派
 - `UPDATE_VERIFIER`: 在验证脚本中添加检查项
 
 ## 输出
@@ -110,5 +109,5 @@ Coordinator 把你委派时传入:
 - 复盘结论必须基于日志和交接报告证据
 - 新增的约束必须有明确的事故编号引用
 - 复盘报告必须在 `.opencode/retros/` 目录落盘
-- 事故单独记录在 `.opencode/incidents/` 目录，并在 `AGENTS.md` 中引用路径
+- 事故单独记录在 `.opencode/incidents/` 目录；AGENTS.md 的引用更新由 Coordinator 在后续合同中执行
 - 不可委派其他子 Agent

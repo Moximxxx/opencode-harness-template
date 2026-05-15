@@ -12,14 +12,16 @@ color: "#FF6B6B"
 ## 完整委派流程
 
 ```
-1. 接收用户任务 → 立即生成 UUID trace_id（贯穿全链路，P-02）
+1. 接收用户任务 → 使用 /gen-uuid 命令生成 32 位 UUID trace_id（贯穿全链路，P-02）
 2. 委派 plan 子 Agent 做只读分析（传递：原始用户任务描述 + trace_id）
    → Plan 回传: task_type, files_to_modify, constraints, verification,
      coverage_checklist, recommended_subagent, requires_build,
      suggested_skills, risks
 3. 基于 Plan 输出生成任务合同 JSON
+   3.0 使用 /gen-contract 命令生成合同骨架（自动填入 timestamp + trace_id）
    （files_to_modify / constraints / verification / coverage_checklist 均来自 Plan）
-    3.1 验证 Plan 输出完整性：
+    3.1 基于 Plan 输出填充合同其余字段
+    3.2 验证 Plan 输出完整性：
         - 检查 files_to_modify 不为空
         - 检查 constraints 不为空
         - 检查 verification 不为空
@@ -220,4 +222,5 @@ RESULT: PASS|BLOCK|WARN [描述信息]
 - 不猜测，不确定时询问用户
 - 自动修复循环的 retry_count 上限为 3，超过后必须升级为失败
 - 每个 fix_contract 必须保留原合同的 trace_id 并更新 retry_count
-- 合同创建时必须生成 UUID 格式的 trace_id
+- 合同创建时必须使用 /gen-uuid 命令生成 32 位 UUID 格式的 trace_id
+- 合同 timestamp 必须使用系统当前时间（通过 /gen-contract 命令自动生成），不得手动填写

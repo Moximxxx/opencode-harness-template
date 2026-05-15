@@ -7,7 +7,7 @@
 | 角色 | 职责 | 写代码 | 触发条件 |
 |------|------|--------|---------|
 | Coordinator | 任务拆分、委派、验证 | 否 | **所有任务开始前必须调用** |
-| Builder | 构建、部署 | 否 | 修改源码后需要构建 |
+| Builder | 构建、部署（构建前需检查工作区洁净，R-10） | 否 | 修改源码后需要构建 |
 | Service-Agent | 启动/停止常驻后台服务 | 否 | 需要后台服务时 |
 | Heartbeat | 检查服务 PID 和端口是否就绪 | 否 | 后台服务启动后 |
 | Crash-Doctor | 崩溃分析、根因定位 | 否 | 进程崩溃/异常 |
@@ -20,14 +20,14 @@
 
 每个阶段必须有明确的交接物传递给下一阶段：
 
-| 阶段 | → 下一阶段 | 交接物 |
-|------|:--------:|------|
-| Coordinator 接收任务 | → Plan | 用户任务原始描述 + trace_id |
-| Plan 分析 | → Coordinator | 结构报告（files_to_modify/constraints/verification/coverage_checklist/suggested_skills/risks） |
-| Coordinator 生成合同 | → Task-Executor | 任务合同 JSON（validate-contract 通过） + 加载的 skills |
-| Task-Executor 执行 | → Code-Reviewer | 交接报告（已修改文件列表 + 自验结果） |
-| Code-Reviewer | → Coordinator | 审查报告（pass/issues 分级） |
-| Coordinator | → Retro | 全链路数据（合同+plan+执行+审查+构建结果） |
+| 阶段 | → 下一阶段 | 合同类型 | 交接物 |
+|------|:--------:|:---:|------|
+| Coordinator 接收任务 | → Plan | PLAN | 用户任务原始描述 + trace_id |
+| Plan 分析 | → Coordinator | (PLAN 合同输出) | 结构报告（files_to_modify/constraints/verification/coverage_checklist/suggested_skills/risks） |
+| Coordinator 生成合同 | → 执行者 | FIX/FEAT/DOCS/BUILD | 任务合同 JSON（validate-contract 通过） + 加载的 skills |
+| 执行者执行 | → Code-Reviewer | REVIEW | 交接报告（已修改文件列表 + 自验结果） |
+| Code-Reviewer | → Coordinator | (REVIEW 合同输出) | 审查报告（pass/issues 分级） |
+| Coordinator | → Retro | RETRO | 全链路数据（合同+plan+执行+审查+构建结果） |
 
 ### 禁止行为
 - ❌ Coordinator 在没有 Plan 输出的情况下自行填写合同字段
@@ -47,20 +47,33 @@
 
 **禁止**：主 agent 跳过 Coordinator 直接执行。
 
-### 后台服务必须由 Service-Agent 管理
+### R-7: 禁止跳过 Coordinator
+
+一切任务（含代码修改、构建、诊断、复盘、查询分析）必须通过 Coordinator 生成合同并委派给子 Agent 执行。禁止主 agent 绕过 Coordinator 直接执行 Edit / Write / Bash / Task。
+
+### R-9: 网络搜索时间戳
+
+网络搜索前必须先执行 `date` 获取当前时间，将时间加入搜索关键词。
+
+### R-11: 禁止无差别杀进程
+
+后台进程清理必须按具体 PID 精确操作，禁止使用 `Stop-Process -Name "node"` 等无差别匹配进程名的操作。
+
+### 后台服务必须由 Service-Agent 管理（R-12）
 
 启动 Vite、Electron 等常驻后台进程时，**必须通过 service-agent**。
 service-agent 使用 `Start-Process -WindowStyle Hidden` 完全分离模式启动，立即返回 PID。
 
 **禁止**：任何子 Agent 直接执行后台进程启动命令而不通过 service-agent。
 
-### 后台服务启动后必须做心跳验证
+### 后台服务启动后必须做心跳验证（R-13）
 
 service-agent 返回 PID 后，Coordinator 必须**委派 heartbeat** 轮询检查服务就绪。
 heartbeat 返回 `READY` 后才能委派后续任务。超时未就绪 → 委派 crash-doctor。
 
-### 构建/部署必须调用 Builder
+### R-10: Builder 构建前工作区洁净检查
 
+Builder 在执行构建前必须检查工作区是否洁净：`git status --porcelain` 应无未提交的源码变更。
 修改源码后需要构建/部署时，**必须调用 Builder**。
 
 ### 崩溃/异常必须调用 Crash-Doctor
@@ -82,6 +95,19 @@ heartbeat 返回 `READY` 后才能委派后续任务。超时未就绪 → 委�
 - 验证结果：[PASS/FAIL + 脚本输出]
 - 遗留问题：[如有]
 ```
+
+## 配置一致性
+
+### P-01: 模型列表一致性（项目初始化后适用）
+
+AI 模型列表需在各配置文件之间保持一致。项目初始化时应在相关源文件中统一模型定义。
+→ 项目初始化后再确定具体文件范围
+
+## 治理评估
+
+### P-03: Harness Engineering 六支柱覆盖率评估
+
+每次任务复盘必须对照 Harness Engineering 六支柱（上下文架构、架构约束、自验证循环、前馈控制、反馈控制、熵治理）评估当前覆盖率。任一支柱无对应钩子/脚本覆盖时，应在复盘报告中标注为缺口并列入后续任务规划。
 
 ## 工作区隔离
 

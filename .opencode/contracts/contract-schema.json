@@ -31,7 +31,7 @@
     },
     "files_to_modify": {
       "type": "array",
-      "minItems": 1,
+      "minItems": 0,
       "items": { "type": "string", "minLength": 1 },
       "description": "允许修改的文件列表（相对于项目根目录，推荐使用正斜杠路径，如 .opencode/hooks/guard.sh）"
     },
