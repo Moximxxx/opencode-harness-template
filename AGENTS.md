@@ -44,7 +44,7 @@
 // coordinator 是唯一的主 Agent，一切任务的入口与出口
 // ================================================================
 FUNCTION main(user_task):
-    // Phase 1: 生成全链路 Trace ID（使用 /gen-uuid 命令，P-02）
+    // Phase 1: 生成全链路 Trace ID（使用 /gen-uuid 命令，R-16）
     // Phase 2: 委派 plan 子 Agent 做只读分析 → 生成 PLAN 合同
     //          Plan 输出: task_type, files_to_modify, constraints, verification,
     //          coverage_checklist, recommended_subagent, requires_build, suggested_skills, risks
@@ -68,7 +68,7 @@ FUNCTION main(user_task):
     //          审查 FAIL 且 retry_count ≥ 3 → 失败，委派 crash-doctor（DOCTOR 合同）
     // Phase 10: 构建验证（条件触发）→ 委派 builder（BUILD 合同）
     // Phase 11: 合同→completed
-    // Phase 12: 复盘 → 委派 retro（RETRO 合同），强制（R-6）
+    // Phase 12: 复盘 → 委派 retro（RETRO 合同），强制（R-06）
     //           retro 输出复盘报告、事故记录、约束更新建议
     // Phase 13: Git 操作（复盘后，仅 completed 时执行）
     //           加载 git-commit skill → 生成 GIT 合同 → git add/commit/push
@@ -95,25 +95,37 @@ FUNCTION main(user_task):
 
 ## 核心规则索引
 
-各规则详情见对应约束文件，此处仅列编号与概要。
+所有规则存放在 `.opencode/rules/` 目录，每个规则一个独立文件。AGENTS.md 仅保留 R-0（语言规范）。
 
-| 编号 | 概要 | 位置 |
-|:----:|------|:----:|
+### 规则体系说明
+- **R-XX**: 规则（Rules），编号从 R-01 到 R-18，按主题分组
+  - **合同组 (R-01~R-07)**：任务合同生命周期与工作流完整性
+  - **Agent 组 (R-08~R-13)**：各 Agent 角色协作规范
+  - **流程组 (R-14~R-18)**：质量控制与追溯机制
+- **INC-YYYYMMDD-NNN**: 事故记录（Incidents），独立编号空间，存放于 `.opencode/incidents/`
+- **P 前缀已废弃**：原 P-01~P-04 已并入 R-16~R-18 或作为已知局限脚注
+
+| 编号 | 概要 | 文件 |
+|:----:|------|------|
 | R-0 | 语言强制规范 — 所有思考与输出使用简体中文 | 本文件开头 |
-| R-6 | 完整工作流闭环 — 不可跳过任何阶段 | `constraints/contract-mechanism.md` |
-| R-7 | 禁止跳过 Coordinator | `constraints/agent-system.md` |
-| R-8 | 合同必须 — 仅修改 files_to_modify 指定文件，30min 有效期 | `constraints/contract-mechanism.md` |
-| R-9 | 网络搜索前必须先执行 date | `constraints/agent-system.md` |
-| R-10 | Builder 构建前检查工作区洁净 | `constraints/agent-system.md` |
-| R-11 | 禁止无差别杀进程 | `constraints/agent-system.md` |
-| R-12 | 后台服务必须通过 Service-Agent 管理 | `constraints/agent-system.md` |
-| R-13 | 后台服务必须有心跳验证 | `constraints/agent-system.md` |
-| R-14 | 自动修复循环（≤3次） | `constraints/contract-mechanism.md` |
-| R-15 | Hook 文档实现一致性 | `constraints/contract-mechanism.md` |
-| P-01 | 模型列表一致性（项目初始化后适用） | `constraints/agent-system.md` |
-| P-02 | 全链路 Trace ID — UUID 贯穿全链路 | `constraints/contract-mechanism.md` |
-| P-03 | Harness Engineering 六支柱覆盖率评估 | `constraints/agent-system.md` |
-| P-04 | validate-contract 文件存在性检查已修复，由 post-edit-verify 替代 | `constraints/contract-mechanism.md`（已知局限） |
+| R-01 | 源码修改前必须先有合同 | `rules/R-01_source-modification-contract.md` |
+| R-02 | 合同必须覆盖所有修改文件 | `rules/R-02_coverage-all-files.md` |
+| R-03 | 覆盖率闭环 — assert:/SKIP: | `rules/R-03_coverage-closure.md` |
+| R-04 | 任务完成后更新合同状态 | `rules/R-04_status-update.md` |
+| R-05 | 合同命名规范 | `rules/R-05_contract-naming.md` |
+| R-06 | 完整工作流闭环 — 不可跳过任何阶段 | `rules/R-06_workflow-integrity.md` |
+| R-07 | 合同范围与时效 — files_to_modify + 30min | `rules/R-07_contract-scope.md` |
+| R-08 | 禁止跳过 Coordinator | `rules/R-08_coordinator-gate.md` |
+| R-09 | 网络搜索前必须先执行 date | `rules/R-09_web-search-timestamp.md` |
+| R-10 | Builder 构建前检查工作区洁净 | `rules/R-10_builder-workspace-clean.md` |
+| R-11 | 禁止无差别杀进程 | `rules/R-11_no-indiscriminate-kill.md` |
+| R-12 | 后台服务必须通过 Service-Agent 管理 | `rules/R-12_service-agent-required.md` |
+| R-13 | 后台服务必须有心跳验证 | `rules/R-13_heartbeat-required.md` |
+| R-14 | 自动修复循环（≤3次） | `rules/R-14_auto-retry-loop.md` |
+| R-15 | Hook 文档实现一致性 | `rules/R-15_hook-implementation.md` |
+| R-16 | 全链路 Trace ID（原 P-02） | `rules/R-16_trace-id.md` |
+| R-17 | 六支柱覆盖率评估（原 P-03） | `rules/R-17_six-pillars-coverage.md` |
+| R-18 | 模型列表一致性（原 P-01，项目初始化后适用） | `rules/R-18_model-list-consistency.md` |
 
 ---
 
@@ -129,12 +141,13 @@ FUNCTION main(user_task):
 
 ## 约束文档
 
-详细约束规则通过 `opencode.jsonc` 的 `instructions` 字段引用，位于 `.opencode/constraints/` 目录：
-- `agent-system.md` — Agent 角色分离与工作区隔离
-- `arch-layering.md` — 三层架构依赖规则
+技术/代码规范约束位于 `.opencode/constraints/` 目录：
 - `contract-mechanism.md` — 合同机制与生命周期
 - `tech-stack/typescript.md` — TypeScript 约束
 - `tech-stack/react.md` — React 编码约束
+
+> 多 Agent 架构规范见本文件 Agent 列表与工作流章节。
+> 详细规则见 `.opencode/rules/` 目录。
 
 合同模板：`.opencode/contracts/contract-schema.json`
 
@@ -142,5 +155,4 @@ FUNCTION main(user_task):
 
 ---
 
-> **注意**：约束文档中 `arch-layering.md` 的架构描述和 `tech-stack/` 下的技术栈约束为通用模板，
-> 应在项目初始化后根据实际技术栈调整具体内容。
+> **注意**：`tech-stack/` 下的技术栈约束为通用模板，应在项目初始化后根据实际技术栈调整具体内容。

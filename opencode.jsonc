@@ -7,9 +7,9 @@
   // ================================================================
   "instructions": [
     "./AGENTS.md",
-    ".opencode/constraints/agent-system.md",
-    ".opencode/constraints/arch-layering.md",
-    ".opencode/constraints/contract-mechanism.md"
+    ".opencode/constraints/contract-mechanism.md",
+    ".opencode/constraints/tech-stack/typescript.md",
+    ".opencode/constraints/tech-stack/react.md"
   ],
 
   // 默认代理（必须是 primary 模式）

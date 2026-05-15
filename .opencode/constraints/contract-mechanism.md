@@ -52,14 +52,14 @@ files_to_modify / constraints / verification / coverage_checklist 字段内容�
 
 ## 规则
 
-### R-01: 源码修改前必须先有合同
+### [R-01](../rules/R-01_source-modification-contract.md): 源码修改前必须先有合同
 
 **Edit/Write 操作前必须通过 `coordinator-guard.sh` 门禁**（位于 `.opencode/hooks/`）：
 - 无有效合同 → **拦截**
 - 合同过期（>30分钟）→ **拦截**
 - 文件不在 `files_to_modify` 中 → **拦截**
 
-### R-06: 完整工作流闭环（强制 — 不可跳过）
+### [R-06](../rules/R-06_workflow-integrity.md): 完整工作流闭环（强制 — 不可跳过）
 
 每个任务**必须**按顺序走完完整工作流：
 Coordinator → Plan → Contract → Validate → Hooks → Task-Executor → Code-Reviewer →（自动修复循环 ≤3次）→ Builder → Retro → Git。
@@ -74,22 +74,22 @@ Coordinator → Plan → Contract → Validate → Hooks → Task-Executor → C
 - `coordinator-guard.sh`：编辑文件前检查是否在 active 合同范围内
 - `workflow-integrity-check.sh`：合同完整性验证（trace_id/constraints 等非空）
 
-### R-02: 合同必须覆盖所有修改文件
+### [R-02](../rules/R-02_coverage-all-files.md): 合同必须覆盖所有修改文件
 
 `files_to_modify` 列出的文件是唯一允许修改的范围。
 
-### R-03: 覆盖率闭环
+### [R-03](../rules/R-03_coverage-closure.md): 覆盖率闭环
 
 `coverage_checklist` 中每个功能点必须：
 - **assert:描述** — 已测试且有断言
 - **SKIP:原因** — 不可测试，已标注原因
 - 不允许空白或 TODO
 
-### R-04: 任务完成后更新状态
+### [R-04](../rules/R-04_status-update.md): 任务完成后更新状态
 
 将 `status` 从 `active` 改为 `completed` 或 `failed`。
 
-### R-05: 合同命名规范
+### [R-05](../rules/R-05_contract-naming.md): 合同命名规范
 
 合同文件必须按照以下规范命名和组织：
 
@@ -111,11 +111,11 @@ Coordinator → Plan → Contract → Validate → Hooks → Task-Executor → C
 
 **注意**: 旧格式的合同文件（直接放在 contracts/ 根目录）将在下次整理时迁移。
 
-### R-08: 合同必须
+### [R-07](../rules/R-07_contract-scope.md): 合同范围与时效
 
 Task-Executor 仅能修改合同 `files_to_modify` 指定的文件，合同有效期 30 分钟。
 
-### R-15: Hook 文档实现一致性
+### [R-15](../rules/R-15_hook-implementation.md): Hook 文档实现一致性
 
 contract-mechanism.md 的「Hook 目录」中声明的每个 hook 必须有对应的 `.opencode/hooks/{name}.sh` 脚本实现。尚未实现的 hook 必须在文档中显式标注「(未实现)」，且禁止在合同的 hooks 数组中引用未实现的 hook。
 
@@ -168,7 +168,7 @@ Hook（钩子/护栏）是任务执行前/后的插桩检查点，遵循统一�
 
 ### 已知局限
 
-- **validate-contract 文件存在性检查（已修复）**: 详见事故记录 [INC-20260516-001](../../incidents/INC-20260516-001.md)。修复内容：从 `validate-contract.sh` 移除了文件存在性检查，新建 `post-edit-verify.sh` 承担该职责。此修复遵循 P-04 规范。
+- **validate-contract 文件存在性检查（已修复）**: 详见事故记录 [INC-20260516-001](../../incidents/INC-20260516-001.md)。修复内容：从 `validate-contract.sh` 移除了文件存在性检查，新建 `post-edit-verify.sh` 承担该职责。此修复遵循事故记录 INC-20260516-001 的处理方案。
 
 ### Hook 执行顺序
 
@@ -206,13 +206,13 @@ Post_task 在 task-executor 返回后按列表顺序执行，全部 PASS 后才�
 
 ## 自动修复循环
 
-### R-14: 自动修复循环（Auto-Retry Loop）
+### [R-14](../rules/R-14_auto-retry-loop.md): 自动修复循环（Auto-Retry Loop）
 
 code-reviewer 审查发现问题时，Coordinator 应委派 Plan 分析修复方案，基于修复计划生成 fix_contract 并重派 task-executor 修复，最多重试 3 次。超过 3 次则升级为失败，委派 crash-doctor 诊断。每次重试的 fix_contract 必须保留原合同的 trace_id 并递增 retry_count。每次修复的决策由 Plan 驱动。
 
 ## Trace ID
 
-### P-02: 全链路 Trace ID
+### [R-16](../rules/R-16_trace-id.md): 全链路 Trace ID
 
 Coordinator 接收用户任务后立即生成全局唯一的 trace_id（UUID 格式），在 Plan 阶段即开始使用，贯穿 Plan → 合同 → Task-Executor → Code-Reviewer → Builder → Retro 全链路。所有子 Agent 的交接/审查/诊断/复盘报告必须携带同一 trace_id。
 → 适用范围: 所有 Agent（全局）
