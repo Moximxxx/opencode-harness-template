@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "analyzed_at": null,
+  "project": {
+    "name": "",
+    "path": "",
+    "is_git_repo": false
+  },
+  "detected": {
+    "tech_stack": [],
+    "layers": "",
+    "build_system": "",
+    "detected_patterns": []
+  },
+  "suggested_constraints": ["contract-mechanism.md", "agent-system.md", "arch-layering.md"],
+  "file_stats": {}
+}

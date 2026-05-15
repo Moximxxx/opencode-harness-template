@@ -1,0 +1,127 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "任务合同 Schema",
+  "description": "定义多 Agent 工作流中任务合同的字段规范。所有合同文件（.opencode/contracts/*.json）必须符合此 Schema。",
+  "type": "object",
+  "required": [
+    "task_id",
+    "timestamp",
+    "goal",
+    "files_to_modify",
+    "constraints",
+    "verification",
+    "coverage_checklist",
+    "status"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9]+-\\d+$|^\\d{8}_[A-Z]+_\\d{3}$",
+      "description": "任务唯一标识，格式 {前缀}-{序号}（如 TASK-001）或 YYYYMMDD_TYPE_NNN（如 20260510_NORM_001）"
+    },
+    "timestamp": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Unix 时间戳（秒）"
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1,
+      "description": "任务目标描述"
+    },
+    "files_to_modify": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "允许修改的文件列表（相对于项目根目录，推荐使用正斜杠路径，如 .opencode/hooks/guard.sh）"
+    },
+    "constraints": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "引用的约束文档名称列表（对应 AGENTS.md 中的 R-XX / P-XX）"
+    },
+    "verification": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "验证方式列表（脚本路径或命令）"
+    },
+    "coverage_checklist": {
+      "type": "object",
+      "minProperties": 1,
+      "patternProperties": {
+        "^.*$": {
+          "type": "string",
+          "pattern": "^(assert:|SKIP:)"
+        }
+      },
+      "additionalProperties": false,
+      "description": "功能覆盖清单，值必须以 assert: 或 SKIP: 开头"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "active", "completed", "failed"],
+      "description": "合同状态：pending（待执行）→ active（执行中）→ completed（已完成）/ failed（失败）"
+    },
+    "tech_stack_constraints": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "技术栈约束引用列表（可选）"
+    },
+    "hooks": {
+      "type": "object",
+      "description": "AOP 切面钩子，定义任务执行前/后的插桩脚本。hook 脚本位于 .opencode/hooks/{name}.sh，遵循统一协议",
+      "properties": {
+        "pre_task": {
+          "type": "array",
+          "description": "任务执行前运行的 hook 列表（在 delegate 子 Agent 之前）",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]+$",
+            "description": "hook 脚本名称，对应 .opencode/hooks/{name}.sh"
+          }
+        },
+        "post_task": {
+          "type": "array",
+          "description": "任务执行后运行的 hook 列表（子 Agent 返回后）",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]+$",
+            "description": "hook 脚本名称，对应 .opencode/hooks/{name}.sh"
+          }
+        },
+        "on_hook_fail": {
+          "type": "object",
+          "description": "可选：为特定 hook 覆盖默认失败行为。键=hook名称，值=block|warn|ignore",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["block", "warn", "ignore"]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "trace_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9-]+$",
+      "description": "全链路追踪ID，Coordinator 在创建合同时生成 UUID，贯穿所有子 Agent 的交接报告"
+    },
+    "retry_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3,
+      "default": 0,
+      "description": "自动修复循环的重试次数。0=首次执行，1-3=第N次修复重试。超过3次则升级为失败"
+    },
+    "workflow_phases": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["plan", "contract", "validate", "hooks_pre", "execute", "hooks_post", "review", "fix_repair", "build", "retro", "git"]
+      },
+      "description": "可选。追踪合同经历的工作流阶段。Coordinator 每完成一个阶段追加记录。"
+    }
+  },
+  "additionalProperties": false
+}
