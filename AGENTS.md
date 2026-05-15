@@ -250,7 +250,7 @@ FUNCTION main(user_task):
 | plan | subagent | 只读分析、方案评审 | `agents/plan.md` |
 | analyzer | subagent | 深度分析：依赖追踪、影响评估、架构审计（plan 的子代理） | `agents/analyzer.md` |
 | task-executor | subagent | 代码编写（合同范围内） | `agents/task-executor.md` |
-| builder | subagent | 构建、部署、冒烟测试 | `agents/builder.md` |
+| builder | subagent | 构建、部署 | `agents/builder.md` |
 | code-reviewer | subagent | 代码审查 | `agents/code-reviewer.md` |
 | crash-doctor | subagent | 崩溃诊断 | `agents/crash-doctor.md` |
 | retro | subagent | 复盘、约束更新 | `agents/retro.md` |
@@ -327,6 +327,20 @@ contract-mechanism.md 的「Hook 目录」中声明的每个 hook 必须有对�
 
 ### P-03: Harness Engineering 六支柱覆盖率评估
 每次任务复盘必须对照 Harness Engineering 六支柱（上下文架构、架构约束、自验证循环、前馈控制、反馈控制、熵治理）评估当前覆盖率。任一支柱无对应钩子/脚本覆盖时，应在复盘报告中标注为缺口并列入后续任务规划。
+
+### P-04: validate-contract 文件存在性检查 — 新建文件场景已知局限
+`validate-contract.sh` 中的文件存在性检查对新建文件场景产生误报（BLOCK），属于已知局限。对于 `files_to_modify` 包含新建文件的任务，Coordinator 可在合同验证阶段忽略文件存在性相关 BLOCK，改为在后置钩子 `post-edit-verify` 中验证。详见事故记录 `INC-20260516-001`。
+→ 适用范围: coordinator, validate-contract hook
+
+---
+
+## 事故记录索引
+
+事故记录存放于 `.opencode/incidents/` 目录：
+
+| 事故编号 | 日期 | 关联任务 | 简述 | 状态 |
+|---------|------|---------|------|:----:|
+| [INC-20260516-001](.opencode/incidents/INC-20260516-001.md) | 2026-05-16 | DOCS-001 | validate-contract.sh 对新建文件存在性检查误报 | 待修复 |
 
 ---
 

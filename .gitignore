@@ -1,0 +1,13 @@
+# ================================================================
+# OpenCode Harness 运行时产物 — 不追踪以下内容
+# ================================================================
+
+# 合同文件（仅保留 contract-schema.json 作为模板追踪）
+.opencode/contracts/*
+!.opencode/contracts/contract-schema.json
+
+# 复盘报告
+.opencode/retros/
+
+# 事故记录
+.opencode/incidents/

@@ -85,6 +85,7 @@ files_to_modify / constraints / verification / coverage_checklist 字段内容�
       - `PLAN` — 分析计划（plan 子 Agent）
       - `FIX` — 代码修复/修改（task-executor 子 Agent）
       - `FEAT` — 需求开发（task-executor 子 Agent）
+      - `DOCS` — 文档编写（task-executor 子 Agent）
       - `BUILD` — 构建部署（builder 子 Agent）
       - `REVIEW` — 代码审查（code-reviewer 子 Agent）
       - `RETRO` — 复盘（retro 子 Agent）
@@ -121,26 +122,30 @@ Hook（钩子/护栏）是任务执行前/后的插桩检查点，遵循统一�
 
 | Hook 名称 | 类型 | 范围 | 检查内容 | 失败行为 |
 |-----------|------|:----:|---------|---------|
-| `pre-model-check` | 🛡️ 前馈/安全 | 特定 | Token 预算、上下文使用率、Prompt 注入检测 | BLOCK（安全违规）、WARN（Token 过高） |
-| `resource-guard` | 🛡️ 前馈/治理 | 特定 | Token 上限(180K)、循环上限(200)、内存上限(2048MB) | BLOCK（超限熔断）、WARN（接近阈值） |
-| `workspace-clean` | 🛡️ 前馈/治理 🔄 | 全局 | `git status --porcelain` 检查未提交源码变更 | WARN（有未提交变更） |
-| `diff-size-guard` | 🛡️ 前馈/约束 🔄 | 全局 | 检查 files_to_modify 文件数（≤20）和估算变更行数（≤2000） | BLOCK（超限）、WARN（接近阈值） |
-| `file-lock-check` | 🛡️ 前馈/安全 | 特定 | 扫描所有 active 合同的 files_to_modify 重叠 | BLOCK（文件被另一活跃合同锁定） |
-| `coordinator-guard` | 🛡️ 前馈/安全 | 全局 | 编辑文件前检查是否在 active 合同范围内 | BLOCK（不在合同范围内） |
-| `workflow-integrity-check` | 🛡️ 前馈/合同 | 特定 | 验证合同字段完整性（trace_id/constraints/verification/coverage_checklist 非空） | WARN（字段缺失） |
+| `pre-model-check` (未实现) | 🛡️ 前馈/安全 | 特定 | Token 预算、上下文使用率、Prompt 注入检测 | BLOCK（安全违规）、WARN（Token 过高） |
+| `resource-guard` (未实现) | 🛡️ 前馈/治理 | 特定 | Token 上限(180K)、循环上限(200)、内存上限(2048MB) | BLOCK（超限熔断）、WARN（接近阈值） |
+| `workspace-clean` (未实现) 🔄 | 🛡️ 前馈/治理 | 全局 | `git status --porcelain` 检查未提交源码变更 | WARN（有未提交变更） |
+| `diff-size-guard` (未实现) 🔄 | 🛡️ 前馈/约束 | 全局 | 检查 files_to_modify 文件数（≤20）和估算变更行数（≤2000） | BLOCK（超限）、WARN（接近阈值） |
+| `file-lock-check` ✅ | 🛡️ 前馈/安全 | 特定 | 扫描所有 active 合同的 files_to_modify 重叠 | BLOCK（文件被另一活跃合同锁定） |
+| `coordinator-guard` ✅ | 🛡️ 前馈/安全 | 全局 | 编辑文件前检查是否在 active 合同范围内 | BLOCK（不在合同范围内） |
+| `workflow-integrity-check` ✅ | 🛡️ 前馈/合同 | 特定 | 验证合同字段完整性（trace_id/constraints/verification/coverage_checklist 非空） | WARN（字段缺失） |
 
 ### Post_task 钩子（执行后）
 
 | Hook 名称 | 类型 | 范围 | 检查内容 | 失败行为 |
 |-----------|------|:----:|---------|---------|
-| `post-edit-verify` | 🔍 反馈/代码 | 特定 | 语法检查、代码质量检测（TODO/console.log/any） | WARN（代码质量问题） |
-| `post-tool-verify` | 🔍 反馈/工具 | 特定 | 工具调用输出格式验证、错误分类追踪 | WARN（工具调用异常） |
-| `dual-check-hook` | 🔍 反馈/审查 | 特定 | Agent 自验 vs 工具独立校验比较 | WARN（不一致） |
-| `self-improvement-trigger` | 🔄 反馈/自愈 | 全局 | 调用 incident-analyzer 触发事故驱动改进循环 | WARN（分析到问题） |
-| `arch-constraint-check` | 🔍 反馈/架构 | 特定 | 对修改文件运行架构约束检查（分层违规、any 类型泄漏） | BLOCK（分层违规）、WARN（其他） |
-| `secret-leak-scan` | 🔍 反馈/安全 | 特定 | 扫描修改文件中的硬编码密钥 | BLOCK（发现硬编码凭证） |
-| `entropy-cleanup` | 🧹 治理/回收 🔄 | 全局 | 清理临时文件、过期追踪记录 | WARN（清理失败） |
-| `validate-contract` | 🔍 反馈/合同 | 全局 | JSON Schema 校验 + 合同时效性(30min) + 文件存在性 | BLOCK（Schema 不通过）、WARN（过期） |
+| `post-edit-verify` (未实现) | 🔍 反馈/代码 | 特定 | 语法检查、代码质量检测（TODO/console.log/any） | WARN（代码质量问题） |
+| `post-tool-verify` (未实现) | 🔍 反馈/工具 | 特定 | 工具调用输出格式验证、错误分类追踪 | WARN（工具调用异常） |
+| `dual-check-hook` (未实现) | 🔍 反馈/审查 | 特定 | Agent 自验 vs 工具独立校验比较 | WARN（不一致） |
+| `self-improvement-trigger` (未实现) | 🔄 反馈/自愈 | 全局 | 调用 incident-analyzer 触发事故驱动改进循环 | WARN（分析到问题） |
+| `arch-constraint-check` (未实现) | 🔍 反馈/架构 | 特定 | 对修改文件运行架构约束检查（分层违规、any 类型泄漏） | BLOCK（分层违规）、WARN（其他） |
+| `secret-leak-scan` (未实现) | 🔍 反馈/安全 | 特定 | 扫描修改文件中的硬编码密钥 | BLOCK（发现硬编码凭证） |
+| `entropy-cleanup` (未实现) 🔄 | 🧹 治理/回收 | 全局 | 清理临时文件、过期追踪记录 | WARN（清理失败） |
+| `validate-contract` ✅ | 🔍 反馈/合同 | 全局 | JSON Schema 校验 + 合同时效性(30min) + 文件存在性 | BLOCK（Schema 不通过）、WARN（过期） |
+
+### 已知局限
+
+- **validate-contract 文件存在性检查**: `validate-contract.sh` 中的文件存在性检查对新建文件场景产生误报（BLOCK）。对于 `files_to_modify` 包含新建文件的任务，Coordinator 可在合同验证阶段忽略此类 BLOCK，改为在后置钩子 `post-edit-verify` 中验证。详见事故记录 [INC-20260516-001](../../incidents/INC-20260516-001.md)。
 
 ### Hook 执行顺序
 
