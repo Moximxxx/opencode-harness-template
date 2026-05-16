@@ -1,16 +1,17 @@
 ---
 description: 生成任务合同骨架（自动填入 timestamp 和 trace_id）
-agent: general
-subtask: true
 ---
 
-请基于以下输入生成任务合同 JSON 骨架。
+请基于以下自动生成的值和用户需求，生成一个完整的任务合同 JSON。
 
-**自动生成字段**：
-- **timestamp**：当前 Unix 时间戳 — !`powershell -Command "[DateTimeOffset]::Now.ToUnixTimeSeconds()"`
-- **trace_id**：32 位 UUID — !`powershell -Command "[guid]::NewGuid().ToString()"`
+**自动生成的值**：
+- trace_id（32 位）: !`node -e "console.log(require('crypto').randomUUID().replace(/-/g, ''))"`
+- timestamp（Unix 秒）: !`node -e "console.log(Math.floor(Date.now() / 1000))"`
 
-**用户提供的字段**：$ARGUMENTS
+**用户需求**：$ARGUMENTS
 
-请生成一个完整的合同 JSON，将自动生成的 timestamp 和 trace_id 填入，其余字段从参数中获取。
-合同格式参考 `.opencode/contracts/contract-schema.json`。
+**输出要求**：
+- 生成符合 `.opencode/contracts/contract-schema.json` 格式的完整合同 JSON
+- 将上述 trace_id 和 timestamp 填入对应字段
+- 其余字段（task_id, goal, files_to_modify, constraints, verification, coverage_checklist）从用户需求中提取
+- 只输出合同 JSON，不要额外说明文字或代码块标记
