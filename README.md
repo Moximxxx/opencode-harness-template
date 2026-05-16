@@ -172,6 +172,14 @@ opencode-harness-template/
 3. 按需调整 `.opencode/constraints/` 中的约束规则
 4. 所有任务自动通过 **Coordinator** 委派，无需手动调用子 Agent
 
+### 通过 CLI 一键初始化
+
+```bash
+npx create-opencode-harness
+```
+
+交互式选择技术栈后，CLI 会自动拉取模板并完成所有占位符替换，无需手动配置。
+
 > ⚠️ 本项目为通用工作流模板，具体技术栈（前端、后端、构建工具等）待项目初始化后填充。
 
 ---

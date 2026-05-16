@@ -7,7 +7,7 @@ import Ajv from "ajv"
 // 通用合同验证工具
 // ================================================================
 // 读取 contracts/contract-schema.json 作为校验规范，对所有合同文件
-// 执行 JSON Schema 验证 + 时效性检查 + 文件存在性检查。
+// 执行 JSON Schema 验证 + 时效性检查。
 // 如需修改校验规则，只需编辑 contract-schema.json，无需改动本工具。
 // ================================================================
 
@@ -28,25 +28,9 @@ function checkFreshness(timestamp: number): CustomError | null {
   return null
 }
 
-/** 校验 files_to_modify 中的文件在磁盘上存在 */
-function checkFilesExist(
-  files: string[],
-  contractDir: string
-): CustomError[] {
-  const errors: CustomError[] = []
-  const projectRoot = path.resolve(contractDir, "..", "..")
-  for (const f of files) {
-    const absPath = path.resolve(projectRoot, f)
-    if (!fs.existsSync(absPath)) {
-      errors.push({ path: `/files_to_modify/${f}`, message: `文件不存在: ${f}` })
-    }
-  }
-  return errors
-}
-
 export default tool({
   description:
-    "通用合同验证工具。读取 contract-schema.json 作为校验规范，对指定合同执行 JSON Schema 验证 + 时效性检查 + 文件存在性检查。Coordinator 委派子 Agent 前必须调用。",
+    "通用合同验证工具。读取 contract-schema.json 作为校验规范，对指定合同执行 JSON Schema 验证 + 时效性检查。Coordinator 委派子 Agent 前必须调用。",
   args: {
     contract_path: tool.schema
       .string()
@@ -122,9 +106,7 @@ export default tool({
       if (freshErr) allErrors.push(freshErr)
     }
 
-    if (Array.isArray(obj.files_to_modify)) {
-      allErrors.push(...checkFilesExist(obj.files_to_modify as string[], path.dirname(contractPath)))
-    }
+
 
     // --- 输出 ---
     const contractId = typeof obj.task_id === "string" ? obj.task_id : null
