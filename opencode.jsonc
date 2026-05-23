@@ -86,24 +86,9 @@
       }
     },
 
-    // ---- 只读分析子代理 ----
-    "plan": {
-      "description": "计划者，负责只读分析、方案评审和架构规划。不可修改文件。",
-      "mode": "subagent",
-      "model": "deepseek/deepseek-v4-pro",
-      "color": "#4ECDC4",
-      "temperature": 0.1,
-      "steps": 10,
-      "prompt": "{file:./.opencode/agents/plan.md}",
-      "permission": {
-        "edit": "deny",
-        "bash": "deny"
-      }
-    },
-
-    // ---- 深度分析子代理（plan 的子代理，大型复杂任务专用）----
+    // ---- 分析子代理（纯分析不决策）----
     "analyzer": {
-      "description": "深度分析师，专门分析大型复杂任务。用于依赖追踪、影响评估、架构审计。只读。",
+      "description": "分析智能体，纯分析不决策。负责方案对比、依赖追踪、影响评估、架构审计。只读。",
       "mode": "subagent",
       "model": "deepseek/deepseek-v4-pro",
       "color": "#C9B1FF",
@@ -161,70 +146,15 @@
       }
     },
 
-    // ---- 崩溃诊断子代理（内部，隐藏）----
-    "crash-doctor": {
-      "description": "崩溃诊断者，分析崩溃日志、定位根因。不修改代码。",
-      "mode": "subagent",
-      "hidden": true,
-      "model": "deepseek/deepseek-v4-flash",
-      "color": "#FFEAA7",
-      "temperature": 0.2,
-      "prompt": "{file:./.opencode/agents/crash-doctor.md}",
-      "permission": {
-        "edit": "deny",
-        "bash": {
-          "grep *": "allow",
-          "git log *": "allow"
-        }
-      }
-    },
-
-    // ---- 后台服务管理（内部，隐藏）----
-    "service-agent": {
-      "description": "后台服务管理：启动/停止常驻后台服务，完全分离进程立即返回 PID。",
-      "mode": "subagent",
-      "hidden": true,
-      "model": "deepseek/deepseek-v4-flash",
-      "color": "#98D8C8",
-      "temperature": 0.1,
-      "steps": 10,
-      "prompt": "{file:./.opencode/agents/service-agent.md}",
-      "permission": {
-        "edit": "deny",
-        "bash": "allow"
-      }
-    },
-
-    // ---- 心跳监控（内部，隐藏）----
-    "heartbeat": {
-      "description": "心跳监控：检查后台服务 PID 是否存活、端口/URL 是否可达，返回 READY/WAITING/DEAD。",
-      "mode": "subagent",
-      "hidden": true,
-      "model": "deepseek/deepseek-v4-flash",
-      "color": "#F7DC6F",
-      "temperature": 0.1,
-      "steps": 10,
-      "prompt": "{file:./.opencode/agents/heartbeat.md}",
-      "permission": {
-        "edit": "deny",
-        "bash": {
-          "Get-Process *": "allow",
-          "Invoke-WebRequest *": "allow",
-          "Get-Content *": "allow",
-          "Test-Path *": "allow"
-        }
-      }
-    },
-
-    // ---- 冒烟测试子代理 ----
-    "smoke-tester": {
-      "description": "E2E 冒烟测试者：异步启动服务、截图、日志、UI分析、模拟点击。不改源码。",
+    // ---- 测试子代理 ----
+    "tester": {
+      "description": "统一测试者，负责 E2E 测试、单元测试运行、UI 冒烟测试。不改源码。",
       "mode": "subagent",
       "model": "deepseek/deepseek-v4-flash",
       "color": "#F0B27A",
       "temperature": 0.2,
       "steps": 30,
-      "prompt": "{file:./.opencode/agents/smoke-tester.md}",
+      "prompt": "{file:./.opencode/agents/tester.md}",
       "permission": {
         "edit": "deny",
         "bash": "allow"
