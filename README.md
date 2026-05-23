@@ -16,21 +16,17 @@
 
 ### 1. 🧑‍🤝‍🧑 多 Agent 角色分离
 
-共 **11 个 Agent** 各司其职，职责明确，相互协作：
+共 **7 个 Agent** 各司其职，职责明确，相互协作：
 
 | Agent | 类型 | 职责 |
 |-------|------|------|
-| **Coordinator** | 主代理 | 任务入口与出口：拆分、合同、委派、验证 |
-| **Plan** | 子代理 | 只读分析、方案评审、架构规划 |
-| **Analyzer** | 子代理 | 深度分析：依赖追踪、影响评估、架构审计 |
+| **Coordinator** | 主代理 | 任务入口与出口：决策、合同、委派、验证 |
+| **Analyzer** | 子代理 | 纯分析不决策：方案对比、依赖追踪、影响评估、架构审计 |
 | **Task-Executor** | 子代理 | 代码编写（合同范围内） |
 | **Builder** | 子代理 | 构建、部署 |
 | **Code-Reviewer** | 子代理 | 代码质量审查 |
-| **Crash-Doctor** | 子代理 | 崩溃诊断、根因分析 |
 | **Retro** | 子代理 | 复盘、约束更新、事故记录 |
-| **Service-Agent** | 子代理 | 后台服务管理 |
-| **Heartbeat** | 子代理 | 心跳监控：服务 PID 和端口就绪检查 |
-| **Smoke-Tester** | 子代理 | E2E 冒烟测试 |
+| **Tester** | 子代理 | 统一测试：单元测试、E2E测试、UI冒烟测试 |
 
 ### 2. 📜 合同机制（Contract）
 
@@ -69,7 +65,7 @@ Layer 3: 前端/UI层 → Layer 2: 业务逻辑层 → Layer 1: 运行时层
 从任务开始即生成全局唯一的 UUID，贯穿全生命周期：
 
 ```
-Plan → 合同 → Task-Executor → Code-Reviewer → Builder → Retro
+Analyzer → 合同 → Task-Executor → Code-Reviewer → Builder → Retro
 ```
 
 所有子 Agent 的交接报告、审查报告、诊断报告、复盘报告均携带同一 Trace ID，确保全链路可追溯。
@@ -78,10 +74,10 @@ Plan → 合同 → Task-Executor → Code-Reviewer → Builder → Retro
 
 代码审查发现问题后自动触发修复流程：
 
-- Code-Reviewer 发现问题 → Plan 制定修复策略
+- Code-Reviewer 发现问题 → Analyzer 分析修复策略
 - 生成 `fix_contract` → Task-Executor 执行修复
 - 最多重试 **3 次**
-- 超过 3 次则升级为失败，委派 Crash-Doctor 诊断
+- 超过 3 次则升级为失败，加载 crash-doctor skill 诊断，委派 Retro 记录
 
 ---
 
@@ -92,7 +88,7 @@ Plan → 合同 → Task-Executor → Code-Reviewer → Builder → Retro
     │
     ▼
 ┌──────────────┐
-│  Plan 分析    │  只读分析任务范围、约束、风险
+│  Analyzer 分析 │  只读分析任务范围、约束、风险（多方案对比）
 └──────┬───────┘
        ▼
 ┌──────────────┐
@@ -156,7 +152,7 @@ opencode-harness-template/
     ├── contracts/              # 任务合同（运行时文件）
     │   └── contract-schema.json # 合同 JSON Schema 模板
     ├── hooks/                  # Hook 护栏脚本
-    ├── skills/                 # 技能文档（14 个）
+    ├── skills/                 # 技能文档（15 个）
     ├── scripts/                # 工具脚本
     ├── tools/                  # 验证工具
     └── rules/                  # 规则文件
