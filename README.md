@@ -148,9 +148,8 @@ opencode-harness-template/
 ├── README.md                   # 本文件
 ├── .gitignore                  # Git 忽略规则
 └── .opencode/
-    ├── agents/                 # Agent 提示词文件（11 个）
+    ├── agents/                 # Agent 提示词文件（7 个）
     ├── constraints/            # 约束规则文档
-    │   ├── agent-system.md     # Agent 角色分离与工作区隔离
     │   ├── arch-layering.md    # 三层架构依赖规则
     │   ├── contract-mechanism.md # 合同机制与生命周期
     │   └── tech-stack/         # 技术栈约束模板
@@ -188,7 +187,6 @@ npx create-opencode-harness
 
 | 文档 | 路径 | 说明 |
 |------|------|------|
-| Agent 体系约束 | `.opencode/constraints/agent-system.md` | 角色分离、工作区隔离、强制调用规则 |
 | 架构分层约束 | `.opencode/constraints/arch-layering.md` | 三层架构单向依赖规则 |
 | 合同机制约束 | `.opencode/constraints/contract-mechanism.md` | 合同生命周期、格式、Hook 目录 |
 

@@ -17,7 +17,7 @@ permission:
 
 Coordinator 把你委派时传入:
 - `contract`: 完整合同记录
-- `plan`: plan 子 Agent 的计划报告
+- `analyzer`: analyzer 子 Agent 的分析报告
 - `execution_result`: task-executor / builder 的交接报告
 - `review`: code-reviewer 的审查报告（可能为 null）
 - `build_result`: builder 的构建结果（可能为 null）

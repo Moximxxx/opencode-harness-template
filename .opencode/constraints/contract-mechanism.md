@@ -16,14 +16,14 @@
 ### 合同生命周期
 
 ```
-[Plan 分析阶段] → pending（待执行）→ active（执行中）→ completed（已完成）/ failed（失败）
+[Analyzer 分析阶段] → pending（待执行）→ active（执行中）→ completed（已完成）/ failed（失败）
                       ↑
                       └── 30分钟超时，需重新创建
 ```
 
-合同创建前，Coordinator 先委派 Plan 子 Agent 做只读分析。Plan 的结构化输出直接决定合同的
+合同创建前，Coordinator 先委派 Analyzer 子 Agent 做只读分析。Analyzer 的结构化输出直接决定合同的
 files_to_modify / constraints / verification / coverage_checklist 字段内容。
-因此 Plan 阶段虽不在合同状态中体现，但所有合同字段必须来自 Plan 的分析而非 Coordinator 的猜测。
+因此 Analyzer 阶段虽不在合同状态中体现，但所有合同字段必须来自 Analyzer 的分析而非 Coordinator 的猜测。
 
 ### 合同格式
 
@@ -62,13 +62,13 @@ files_to_modify / constraints / verification / coverage_checklist 字段内容�
 ### [R-06](../rules/R-06_workflow-integrity.md): 完整工作流闭环（强制 — 不可跳过）
 
 每个任务**必须**按顺序走完完整工作流：
-Coordinator → Plan → Contract → Validate → Hooks → Task-Executor → Code-Reviewer →（自动修复循环 ≤3次）→ Builder → Retro → Git。
+Coordinator → Analyzer → Contract → Validate → Hooks → Task-Executor → Code-Reviewer →（自动修复循环 ≤3次）→ Builder → Retro → Git。
 
 **违反后果**：
-- 跳过 Plan 阶段直接生成合同 → **违规**，合同无效
+- 跳过 Analyzer 阶段直接生成合同 → **违规**，合同无效
 - 跳过 Code-Review 阶段 → **违规**，任务不得标记为 completed
 - 跳过 Retro 阶段 → **违规**，禁止 Git 提交
-- 连续 2 次违规 → Coordinator 必须委派 crash-doctor 诊断流程缺陷
+- 连续 2 次违规 → Coordinator 必须加载 crash-doctor skill 诊断，委派 retro 记录
 
 **物理门禁**：
 - `coordinator-guard.sh`：编辑文件前检查是否在 active 合同范围内
@@ -97,14 +97,14 @@ Coordinator → Plan → Contract → Validate → Hooks → Task-Executor → C
 2. **文件名格式**: `YYYYMMDD_TYPE_NNN.json`
    - `YYYYMMDD`: 创建合同的日期
     - `TYPE`: 任务类型缩写，基于子 Agent 职责：
-      - `PLAN` — 分析计划（plan 子 Agent）
+      - `ANALYZE` — 分析（analyzer 子 Agent）
       - `FIX` — 代码修复/修改（task-executor 子 Agent）
       - `FEAT` — 需求开发（task-executor 子 Agent）
       - `DOCS` — 文档编写（task-executor 子 Agent）
       - `BUILD` — 构建部署（builder 子 Agent）
       - `REVIEW` — 代码审查（code-reviewer 子 Agent）
       - `RETRO` — 复盘（retro 子 Agent）
-      - `DOCTOR` — 崩溃诊断（crash-doctor 子 Agent）
+      - `DOCTOR` — 崩溃诊断（**已废弃**，crash-doctor 已降级为 skill）
    - `NNN`: 3 位数字编号，从 001 开始
 3. **task_id**: 应与文件名中的 `TYPE_NNN` 部分对应，格式为 `TYPE-NNN`（如 `FIX-001`）
 4. **示例**: `contracts/20260510/20260510_FIX_001.json` → `task_id: "FIX-001"`
@@ -174,7 +174,7 @@ Hook（钩子/护栏）是任务执行前/后的插桩检查点，遵循统一�
 
 Pre_task 按列表顺序依次执行，全部 PASS 后才委派 task-executor。
 Post_task 在 task-executor 返回后按列表顺序执行，全部 PASS 后才进入 code-review 阶段。
-任一 hook 返回 BLOCK 立即中断流程，合同状态→failed，委派 crash-doctor 诊断。
+任一 hook 返回 BLOCK 立即中断流程，合同状态→failed，加载 crash-doctor skill 诊断，委派 retro 记录。
 
 ### 默认钩子
 标有 🔄 的钩子是「默认钩子」，在**每次任务中自动执行**，不依赖合同显式声明。
@@ -196,23 +196,22 @@ Post_task 在 task-executor 返回后按列表顺序执行，全部 PASS 后才�
 
 | 阶段 | 执行者 | 合同类型 | 产物 | 门禁 |
 |------|--------|:---:|------|------|
-| Plan | plan | PLAN | 结构分析报告 | 必须包含 files_to_modify/constraints/verification |
+| Analyze | analyzer | ANALYZE | 结构化分析报告（含方案对比） | 必须包含 files_to_modify/constraints/verification |
 | Contract | coordinator | (主合同) | 任务合同 JSON | validate-contract + workflow-integrity-check |
 | Execute | task-executor | FIX/FEAT/DOCS | 代码修改 + 交接报告 | coordinator-guard + file-lock-check |
 | Review | code-reviewer | REVIEW | 审查报告 | pass=false 时自动修复循环 |
 | Build | builder | BUILD | 构建结果 | requires_build=true 时强制执行 |
 | Retro | retro | RETRO | 复盘报告 | 所有任务必须执行 |
-| Doctor | crash-doctor | DOCTOR | 诊断报告 | 异常/崩溃时触发 |
 
 ## 自动修复循环
 
 ### [R-14](../rules/R-14_auto-retry-loop.md): 自动修复循环（Auto-Retry Loop）
 
-code-reviewer 审查发现问题时，Coordinator 应委派 Plan 分析修复方案，基于修复计划生成 fix_contract 并重派 task-executor 修复，最多重试 3 次。超过 3 次则升级为失败，委派 crash-doctor 诊断。每次重试的 fix_contract 必须保留原合同的 trace_id 并递增 retry_count。每次修复的决策由 Plan 驱动。
+code-reviewer 审查发现问题时，Coordinator 应委派 Analyzer 分析修复方案，基于修复计划生成 fix_contract 并重派 task-executor 修复，最多重试 3 次。超过 3 次则升级为失败，加载 crash-doctor skill 诊断，委派 retro 记录。每次重试的 fix_contract 必须保留原合同的 trace_id 并递增 retry_count。每次修复的决策由 Analyzer 的分析结果驱动。
 
 ## Trace ID
 
 ### [R-16](../rules/R-16_trace-id.md): 全链路 Trace ID
 
-Coordinator 接收用户任务后立即生成全局唯一的 trace_id（UUID 格式），在 Plan 阶段即开始使用，贯穿 Plan → 合同 → Task-Executor → Code-Reviewer → Builder → Retro 全链路。所有子 Agent 的交接/审查/诊断/复盘报告必须携带同一 trace_id。
+Coordinator 接收用户任务后立即生成全局唯一的 trace_id（UUID 格式），在 Analyzer 阶段即开始使用，贯穿 Analyzer → 合同 → Task-Executor → Code-Reviewer → Builder → Retro 全链路。所有子 Agent 的交接/审查/诊断/复盘报告必须携带同一 trace_id。
 → 适用范围: 所有 Agent（全局）

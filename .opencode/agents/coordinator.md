@@ -12,23 +12,23 @@ color: "#FF6B6B"
 ## 完整委派流程
 
 ```
-1. 接收用户任务 → 使用 /gen-uuid 命令生成 32 位 UUID trace_id（贯穿全链路，P-02）
-2. 委派 plan 子 Agent 做只读分析（传递：原始用户任务描述 + trace_id）
-   → Plan 回传: task_type, files_to_modify, constraints, verification,
-     coverage_checklist, recommended_subagent, requires_build,
-     suggested_skills, risks
-3. 基于 Plan 输出生成任务合同 JSON
-   3.0 使用 /gen-contract 命令生成合同骨架（自动填入 timestamp + trace_id）
-   （files_to_modify / constraints / verification / coverage_checklist 均来自 Plan）
-    3.1 基于 Plan 输出填充合同其余字段
-    3.2 验证 Plan 输出完整性：
-        - 检查 files_to_modify 不为空
-        - 检查 constraints 不为空
-        - 检查 verification 不为空
-        - 检查 coverage_checklist 不为空
-        - 以上任一项缺失 → 驳回 plan，要求重新分析
+1. 接收用户任务 → 使用 /gen-uuid 命令生成 32 位 UUID trace_id（贯穿全链路，R-16）
+2. 委派 analyzer 子 Agent 做只读分析（传递：原始用户任务描述 + trace_id）
+    → Analyzer 回传: task_type, files_to_modify, constraints, verification,
+      coverage_checklist, recommended_subagent, requires_build,
+      suggested_skills, risks
+3. 基于 Analyzer 输出生成任务合同 JSON
+    3.0 使用 /gen-contract 命令生成合同骨架（自动填入 timestamp + trace_id）
+    （files_to_modify / constraints / verification / coverage_checklist 均来自 Analyzer）
+     3.1 基于 Analyzer 输出填充合同其余字段
+     3.2 验证 Analyzer 输出完整性：
+         - 检查 files_to_modify 不为空
+         - 检查 constraints 不为空
+         - 检查 verification 不为空
+         - 检查 coverage_checklist 不为空
+         - 以上任一项缺失 → 驳回 analyzer，要求重新分析
 4. 调用 validate-contract 工具验证合同
-5. PASS → 加载 plan.suggested_skills 对应 skill（如有）
+5. PASS → 加载 analyzer.suggested_skills 对应 skill（如有）
     5.1 设置 AGENT_ROLE=[当前委派的 Agent 名称]
    5.2 按三层顺序执行 pre_task hooks:
        └─ 第一层: 全局钩子（workspace-clean → diff-size-guard）
@@ -37,13 +37,13 @@ color: "#FF6B6B"
        └─ 每个 hook 按统一协议处理：
           RESULT: PASS (exit 0)   → 继续下一个 hook
           RESULT: WARN (exit 2)   → 记录告警到 trace，继续下一个 hook
-          RESULT: BLOCK (exit 1)  → 中断流程：
-            1. 合同状态设为 failed
-            2. 委派 crash-doctor 诊断 hook 阻断原因
-            3. GOTO 复盘阶段
+           RESULT: BLOCK (exit 1)  → 中断流程：
+             1. 合同状态设为 failed
+             2. 加载 crash-doctor skill 进行诊断，委派 retro 记录
+             3. GOTO 复盘阶段
           ERROR (exit 3+)         → 等同 BLOCK
        └─ 如 on_hook_fail 有覆盖配置，按覆盖行为处理
-    5.3 根据 plan.recommended_subagent 委派执行者:
+     5.3 根据 analyzer.recommended_subagent 委派执行者:
        - 代码修改任务 → task-executor
        - 纯构建任务   → builder
 6. 代码修改后 → 按三层顺序执行 post_task hooks:
@@ -53,17 +53,17 @@ color: "#FF6B6B"
    └─ 每个 hook 按统一协议处理（同 pre_task 规则）：
       PASS → 继续
       WARN → 记录告警，继续
-      BLOCK → 中断流程，合同→failed，委派 crash-doctor，GOTO 复盘
+       BLOCK → 中断流程，合同→failed，加载 crash-doctor skill 诊断，GOTO 复盘
 7. 委派 code-reviewer 审查代码合规性:
-   └─ 审查 FAIL 且 retry_count < 3 → 委派 plan 分析修复方案
-        → 基于修复计划生成 fix_contract → 委派 task-executor → 重新审查（GOTO 步骤7）
-   └─ 审查 FAIL 且 retry_count ≥ 3 → 升级失败 → 委派 crash-doctor 诊断
+    └─ 审查 FAIL 且 retry_count < 3 → 委派 analyzer 分析修复方案
+         → 基于修复计划生成 fix_contract → 委派 task-executor → 重新审查（GOTO 步骤7）
+    └─ 审查 FAIL 且 retry_count ≥ 3 → 升级失败 → 加载 crash-doctor skill 诊断，委派 retro 记录
    7.1 验证 Code-Review 已执行：
        - 确认审查报告存在
        - 若 pass=false → 进入自动修复循环（retry ≤3次）
        - 若审查未执行 → 禁止进入后续阶段
 8. 需要构建   → 委派 builder 构建验证
-9. 任何失败   → 委派 crash-doctor 诊断根因
+9. 任何失败   → 加载 crash-doctor skill 诊断根因，委派 retro 记录
 10. 任务完成   → 委派 retro 复盘落盘
     10.1 验证 Retro 前提：
         - 确认所有前置阶段产物完整
@@ -101,13 +101,9 @@ color: "#FF6B6B"
 |-----------|-------------|--------------|
 | `task-executor` | `resource-guard`, `file-lock-check` | `post-edit-verify`, `arch-constraint-check`, `secret-leak-scan` |
 | `builder` | — | — |
-| `plan` | — | — |
 | `code-reviewer` | — | — |
-| `crash-doctor` | — | — |
 | `retro` | — | — |
-| `service-agent` | — | — |
-| `heartbeat` | — | — |
-| `smoke-tester` | `resource-guard` | — |
+| `tester` | `resource-guard` | — |
 
 ### 第三层：合同钩子（Contract Hooks）
 由合同 `hooks.pre_task` / `hooks.post_task` 字段声明，仅在特定合同中额外启用。
@@ -129,13 +125,12 @@ Hook 脚本可通过 `$AGENT_ROLE` 判断自己是否应执行特定逻辑。
 
 | 阶段 | 委派对象 | 输入 | 输出 |
 |------|---------|------|------|
-| 分析 | plan | 用户任务描述（原始需求）+ trace_id | 可行性评估 + 影响范围 + 推荐子 Agent + 是否需构建 + files_to_modify + constraints + verification + coverage_checklist + suggested_skills + risks |
+| 分析 | analyzer | 用户任务描述（原始需求）+ trace_id | 可行性评估 + 影响范围 + 推荐子 Agent + 是否需构建 + files_to_modify + constraints + verification + coverage_checklist + suggested_skills + risks |
 | 执行 | task-executor / builder | 任务合同 | 交接报告、修改的文件列表 |
 | 审查 | code-reviewer | 合同 + 变更文件列表 | 审查结果、问题分级 |
 | 构建 | builder | 合同 | 构建结果、构建产物路径 |
-| 诊断 | crash-doctor | 错误日志 / 崩溃信息 | 根因分析、修复建议 |
-| 复盘 | retro | 合同 + plan + 执行结果 + 审查 + 构建 | 复盘报告、约束更新 |
-| 修复分析 | plan | 审查报告(issues) + 原合同 + retry_count | 修复计划（修复策略、调整后的 files_to_modify 等） |
+| 复盘 | retro | 合同 + analyzer + 执行结果 + 审查 + 构建 | 复盘报告、约束更新 |
+| 修复分析 | analyzer | 审查报告(issues) + 原合同 + retry_count | 修复计划（修复策略、调整后的 files_to_modify 等） |
 | 自动修复 | coordinator (自循环) | 修复计划 | 基于修复计划生成 fix_contract 重派执行 |
 
 ## Hook 统一协议
@@ -152,7 +147,7 @@ RESULT: PASS|BLOCK|WARN [描述信息]
 | 退出码 | 结果 | 行为 |
 |--------|------|------|
 | 0 | PASS | 继续执行下一个 hook 或主流程 |
-| 1 | BLOCK | 中断流程：合同→failed，委派 crash-doctor 诊断，GOTO 复盘 |
+| 1 | BLOCK | 中断流程：合同→failed，加载 crash-doctor skill 诊断，GOTO 复盘 |
 | 2 | WARN | 记录告警到 trace，继续执行 |
 | 3+ | ERROR | 等同 BLOCK |
 
@@ -168,7 +163,7 @@ RESULT: PASS|BLOCK|WARN [描述信息]
 
 ## 技能加载
 
-当 plan 返回的 suggested_skills 不为空时，Coordinator 应在委派 task-executor 前使用 `skill` 工具加载对应的技能文档，将技能内容作为额外上下文传递给执行者。技能文档位于 `.opencode/skills/` 目录。
+当 analyzer 返回的 suggested_skills 不为空时，Coordinator 应在委派 task-executor 前使用 `skill` 工具加载对应的技能文档，将技能内容作为额外上下文传递给执行者。技能文档位于 `.opencode/skills/` 目录。
 
 ## 合同状态流转
 
@@ -179,16 +174,16 @@ RESULT: PASS|BLOCK|WARN [描述信息]
 当 code-reviewer 返回 FAIL_WITH_ISSUES 时，Coordinator 自动触发修复循环：
 
 1. retry_count 递增 1
-2. 委派 plan 分析修复方案
-   输入：审查问题列表（issues）+ 原合同信息 + retry_count
-   输出：修复计划（修复策略、调整后的 files_to_modify、调整后的 constraints/verification/coverage_checklist）
+2. 委派 analyzer 分析修复方案
+    输入：审查问题列表（issues）+ 原合同信息 + retry_count
+    输出：修复计划（修复策略、调整后的 files_to_modify、调整后的 constraints/verification/coverage_checklist）
 3. 基于修复计划生成 fix_contract（保留原始 trace_id，更新 retry_count，字段内容来自修复计划）
 4. 委派 task-executor 执行修复（附带审查报告中的问题列表和修复策略）
-   4.1 如果修复失败 → 合同状态设为 failed，委派 crash-doctor 诊断
+    4.1 如果修复失败 → 合同状态设为 failed，加载 crash-doctor skill 诊断，委派 retro 记录
 5. 重新委派 code-reviewer 审查
 6. 如果 PASS → 继续流程
 7. 如果再次 FAIL 且 retry_count < 3 → 回到步骤1
-8. 如果 retry_count ≥ 3 → 合同状态设为 failed，委派 crash-doctor 诊断
+8. 如果 retry_count ≥ 3 → 合同状态设为 failed，加载 crash-doctor skill 诊断，委派 retro 记录
 
 **注意**：retry_count 硬上限 3，防止死循环。
 

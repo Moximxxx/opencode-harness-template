@@ -45,27 +45,28 @@
 // ================================================================
 FUNCTION main(user_task):
     // Phase 1: 生成全链路 Trace ID（使用 /gen-uuid 命令，R-16）
-    // Phase 2: 委派 plan 子 Agent 做只读分析 → 生成 PLAN 合同
-    //          Plan 输出: task_type, files_to_modify, constraints, verification,
-    //          coverage_checklist, recommended_subagent, requires_build, suggested_skills, risks
-    // Phase 3: 基于 Plan 输出使用 /gen-contract 命令生成任务合同 JSON 骨架
+    // Phase 2: 委派 analyzer 子 Agent 做只读分析（纯分析不决策）
+    //          Analyzer 输出: 方案对比（含优缺点）、task_type、files_to_modify、
+    //          constraints、verification、coverage_checklist、
+    //          recommended_subagent、requires_build、suggested_skills、risks
+    // Phase 3: 基于 Analyzer 输出使用 /gen-contract 命令生成任务合同 JSON 骨架
     //          （自动填入 timestamp + trace_id），填充其余字段后写入
     //          .opencode/contracts/{YYYYMMDD}/{YYYYMMDD}_TYPE_NNN.json，status = pending
     // Phase 4: 调用 validate-contract 工具验证合同（Schema + 时效性）
     //          FAIL → coordinator 修正 → GOTO Phase 4
     // Phase 5: 按三层结构执行 pre_task hooks（全局 → Agent 特定 → 合同）
     //          统一协议：PASS(0)/BLOCK(1)/WARN(2)
-    //          BLOCK → 合同→failed，委派 crash-doctor（DOCTOR 合同） → GOTO retro
-    //          加载 plan.suggested_skills（如有）
-    // Phase 6: 合同→active，委派 plan.recommended_subagent 执行
+    //          BLOCK → 合同→failed，加载 crash-doctor skill 诊断 → GOTO retro
+    //          加载 analyzer.suggested_skills（如有）
+    // Phase 6: 合同→active，委派 analyzer.recommended_subagent 执行
     //          （代码修改 → task-executor，纯构建 → builder）
     //          每个委派对应一种合同类型：FIX/FEAT/DOCS/BUILD
     // Phase 7: 按三层结构执行 post_task hooks
-    // Phase 8: 执行失败 → 委派 crash-doctor（DOCTOR 合同）诊断 → GOTO retro
+    // Phase 8: 执行失败 → 加载 crash-doctor skill 诊断 → 委派 retro 记录 → GOTO retro
     // Phase 9: 代码审查 → 委派 code-reviewer（REVIEW 合同）
-    //          审查 FAIL 且 retry_count < 3 → 委派 plan 分析修复方案
+    //          审查 FAIL 且 retry_count < 3 → 委派 analyzer 分析修复方案
     //          → 基于修复计划生成 fix_contract → 委派 task-executor → 重新审查
-    //          审查 FAIL 且 retry_count ≥ 3 → 失败，委派 crash-doctor（DOCTOR 合同）
+    //          审查 FAIL 且 retry_count ≥ 3 → 失败，加载 crash-doctor skill → GOTO retro
     // Phase 10: 构建验证（条件触发）→ 委派 builder（BUILD 合同）
     // Phase 11: 合同→completed
     // Phase 12: 复盘 → 委派 retro（RETRO 合同），强制（R-06）
@@ -79,17 +80,13 @@ FUNCTION main(user_task):
 
 | Agent | 类型 | 职责 | 提示词文件 |
 |-------|------|------|-----------|
-| coordinator | primary | 任务入口与出口：拆分、合同、委派、验证 | `agents/coordinator.md` |
-| plan | subagent | 只读分析、方案评审 | `agents/plan.md` |
-| analyzer | subagent | 深度分析：依赖追踪、影响评估、架构审计（plan 的子代理） | `agents/analyzer.md` |
+| coordinator | primary | 任务入口与出口：决策、合同、委派、验证 | `agents/coordinator.md` |
+| analyzer | subagent | 纯分析不决策：方案对比、依赖追踪、影响评估、架构审计 | `agents/analyzer.md` |
 | task-executor | subagent | 代码编写（合同范围内） | `agents/task-executor.md` |
 | builder | subagent | 构建、部署 | `agents/builder.md` |
 | code-reviewer | subagent | 代码审查 | `agents/code-reviewer.md` |
-| crash-doctor | subagent | 崩溃诊断 | `agents/crash-doctor.md` |
-| retro | subagent | 复盘、约束更新 | `agents/retro.md` |
-| service-agent | subagent | 后台服务管理：启动/停止开发服务器等常驻进程 | `agents/service-agent.md` |
-| heartbeat | subagent | 心跳监控：检查服务 PID 和端口是否就绪 | `agents/heartbeat.md` |
-| smoke-tester | subagent | E2E 冒烟测试：截图、日志、UI分析、模拟点击（服务需提前就绪） | `agents/smoke-tester.md` |
+| retro | subagent | 复盘、约束更新、事故记录 | `agents/retro.md` |
+| tester | subagent | 统一测试：单元测试、E2E 测试、UI 冒烟测试 | `agents/tester.md` |
 
 ---
 
@@ -119,8 +116,8 @@ FUNCTION main(user_task):
 | R-09 | 网络搜索前必须先执行 date | `rules/R-09_web-search-timestamp.md` |
 | R-10 | Builder 构建前检查工作区洁净 | `rules/R-10_builder-workspace-clean.md` |
 | R-11 | 禁止无差别杀进程 | `rules/R-11_no-indiscriminate-kill.md` |
-| R-12 | 后台服务必须通过 Service-Agent 管理 | `rules/R-12_service-agent-required.md` |
-| R-13 | 后台服务必须有心跳验证 | `rules/R-13_heartbeat-required.md` |
+| R-12 | 后台进程管理规范 — 启动/停止/清理必须记录 PID | `rules/R-12_background-process-management.md` |
+| R-13 | 服务就绪检查 — 使用 heartbeat skill 进行心跳验证 | `rules/R-13_heartbeat-required.md` |
 | R-14 | 自动修复循环（≤3次） | `rules/R-14_auto-retry-loop.md` |
 | R-15 | Hook 文档实现一致性 | `rules/R-15_hook-implementation.md` |
 | R-16 | 全链路 Trace ID（原 P-02） | `rules/R-16_trace-id.md` |
