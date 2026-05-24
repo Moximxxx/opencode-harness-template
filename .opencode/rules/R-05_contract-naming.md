@@ -1,12 +1,13 @@
-# R-05: 合同命名规范
+﻿# R-05: 合同命名规范
 > 分组: 合同 | 严重: 强制
 
 ## 规则
 合同文件按日期分目录：`.opencode/contracts/YYYYMMDD/`
 文件名：`YYYYMMDD_TYPE_NNN.json`
-类型：PLAN / FIX / FEAT / DOCS / BUILD / REVIEW / RETRO / DOCTOR
+类型：ANALYZE / FIX / FEAT / DOCS / BUILD / REVIEW / RETRO
 编号：从 001 开始，三位数字。
 
+> DOCTOR 类型已废弃。crash-doctor 已降级为 skill，不再使用独立合同类型。
 ## 示例
 `contracts/20260510/20260510_FIX_001.json` → task_id: "FIX-001"
 
