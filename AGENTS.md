@@ -1,4 +1,4 @@
-# AGENTS.md — Harness 工作流规范
+﻿# AGENTS.md — Harness 工作流规范
 
 > 多 Agent 协同开发规范入口。详细约束见 `instructions` 引用的文件。
 > 本项目为通用工作流模板，具体技术栈待项目初始化后填充。
@@ -57,6 +57,8 @@ FUNCTION main(user_task):
     // Phase 5: 按三层结构执行 pre_task hooks（全局 → Agent 特定 → 合同）
     //          统一协议：PASS(0)/BLOCK(1)/WARN(2)
     //          BLOCK → 合同→failed，加载 crash-doctor skill 诊断 → GOTO retro
+    //          注：contract-enforcer/secret-leak-scan/dangerous-command-guard 已迁移为 Plugin
+    //              在框架层自动拦截，无需 coordinator 手动调用
     //          加载 analyzer.suggested_skills（如有）
     // Phase 6: 合同→active，委派 analyzer.recommended_subagent 执行
     //          （代码修改 → task-executor，纯构建 → builder）

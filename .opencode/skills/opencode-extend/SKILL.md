@@ -1,4 +1,4 @@
-# OpenCode 扩展指南 — 命令、钩子与工具
+﻿# OpenCode 扩展指南 — 命令、钩子与工具
 
 > OpenCode 原生支持的三种扩展方式：自定义命令、插件钩子、自定义工具。
 > 本指南基于 [OpenCode 官方文档](https://opencode.ai/docs) 整理。
@@ -163,6 +163,42 @@ export const SafetyGuard = async () => {
   }
 }
 ```
+
+#### 示例 5：合同门禁 + 文件锁（contract-enforcer）
+
+完整实现见本项目 .opencode/plugins/contract-enforcer.ts。
+
+核心思路：在 	ool.execute.before 拦截 edit/write 工具，读取 .opencode/contracts/ 目录下的 active 合同，检查文件是否在 iles_to_modify 范围内，同时检测文件锁冲突和合同过期（30 分钟）。
+
+`	s
+// 伪代码
+"tool.execute.before": async (input, output) => {
+  if (input.tool !== "edit" && input.tool !== "write") return
+  const targetFile = extractTargetFile(input, output)
+  const activeContracts = findActiveContracts(contractsDir)
+  // 检查文件是否在任一 active 合同范围内
+  // 检查是否有其他合同锁定了同一文件
+  // 不符合 → throw Error 拦截
+}
+`
+
+#### 示例 6：密钥扫描（secret-leak-scan）
+
+完整实现见本项目 .opencode/plugins/secret-leak-scan.ts。
+
+核心思路：在 	ool.execute.after 检查 write/edit 的内容，用正则扫描 10 种常见密钥模式（OpenAI/GitHub/AWS/JWT/Stripe/Slack 等），命中则脱敏显示并阻止写入。
+
+#### 示例 7：危险命令分级拦截（dangerous-command-guard）
+
+完整实现见本项目 .opencode/plugins/dangerous-command-guard.ts。
+
+核心思路：区分两级防护：
+- **BLOCK 级**（10 条）：系统级危险（rm -rf /、'@ + "$dropDb" + '@、mkfs 等），直接拒绝
+- **WARN 级**（4 条）：项目级危险（rm -rf .、git reset --hard 等），仅日志记录不阻止
+
+使用 client.app.log 记录 WARN 事件，便于事后审计。
+
+---
 
 #### 注入项目环境变量
 ```ts
