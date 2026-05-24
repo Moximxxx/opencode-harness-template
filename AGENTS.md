@@ -158,12 +158,3 @@ FUNCTION main(user_task):
 
 ---
 
-## 🛠️ CLI 工具
-
-本项目提供交互式 CLI 工具 `create-opencode-harness`，可一键拉取并配置本工作流模板：
-
-```bash
-npx create-opencode-harness
-```
-
-工具会交互式询问项目信息（项目名、技术栈等），自动替换 `AGENTS.md`、`harness.config.json`、`README.md` 中的占位符。

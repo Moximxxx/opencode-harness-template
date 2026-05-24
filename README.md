@@ -1,197 +1,127 @@
-# 🚀 opencode-harness-template
+﻿# 馃殌 opencode-harness-template
 
-> **OpenCode 多 Agent 协同开发工作流模板** — 为基于 OpenCode AI 编程助手的项目提供开箱即用的多 Agent 协作基础设施。
-
+> **OpenCode 澶?Agent 鍗忓悓寮€鍙戝伐浣滄祦妯℃澘** 鈥?涓哄熀浜?OpenCode AI 缂栫▼鍔╂墜鐨勯」鐩彁渚涘紑绠卞嵆鐢ㄧ殑澶?Agent 鍗忎綔鍩虹璁炬柦銆?
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
-## 📋 项目概览
+## 馃搵 椤圭洰姒傝
 
-本项目是一个 **Harness 模板**，定义了 OpenCode 环境下多 Agent 协同开发的标准化工作流。它不包含具体业务代码，而是提供了一套完整的**角色体系、合同机制、护栏钩子、架构约束和自动化流程**，帮助开发团队在 AI 辅助编程中保持代码质量和一致性。
-
+鏈」鐩槸涓€涓?**Harness 妯℃澘**锛屽畾涔変簡 OpenCode 鐜涓嬪 Agent 鍗忓悓寮€鍙戠殑鏍囧噯鍖栧伐浣滄祦銆傚畠涓嶅寘鍚叿浣撲笟鍔′唬鐮侊紝鑰屾槸鎻愪緵浜嗕竴濂楀畬鏁寸殑**瑙掕壊浣撶郴銆佸悎鍚屾満鍒躲€佹姢鏍忛挬瀛愩€佹灦鏋勭害鏉熷拰鑷姩鍖栨祦绋?*锛屽府鍔╁紑鍙戝洟闃熷湪 AI 杈呭姪缂栫▼涓繚鎸佷唬鐮佽川閲忓拰涓€鑷存€с€?
 ---
 
-## 🎯 核心设计理念
+## 馃幆 鏍稿績璁捐鐞嗗康
 
-### 1. 🧑‍🤝‍🧑 多 Agent 角色分离
+### 1. 馃鈥嶐煠濃€嶐煣?澶?Agent 瑙掕壊鍒嗙
 
-共 **7 个 Agent** 各司其职，职责明确，相互协作：
-
-| Agent | 类型 | 职责 |
+鍏?**7 涓?Agent** 鍚勫徃鍏惰亴锛岃亴璐ｆ槑纭紝鐩镐簰鍗忎綔锛?
+| Agent | 绫诲瀷 | 鑱岃矗 |
 |-------|------|------|
-| **Coordinator** | 主代理 | 任务入口与出口：决策、合同、委派、验证 |
-| **Analyzer** | 子代理 | 纯分析不决策：方案对比、依赖追踪、影响评估、架构审计 |
-| **Task-Executor** | 子代理 | 代码编写（合同范围内） |
-| **Builder** | 子代理 | 构建、部署 |
-| **Code-Reviewer** | 子代理 | 代码质量审查 |
-| **Retro** | 子代理 | 复盘、约束更新、事故记录 |
-| **Tester** | 子代理 | 统一测试：单元测试、E2E测试、UI冒烟测试 |
+| **Coordinator** | 涓讳唬鐞?| 浠诲姟鍏ュ彛涓庡嚭鍙ｏ細鍐崇瓥銆佸悎鍚屻€佸娲俱€侀獙璇?|
+| **Analyzer** | 瀛愪唬鐞?| 绾垎鏋愪笉鍐崇瓥锛氭柟妗堝姣斻€佷緷璧栬拷韪€佸奖鍝嶈瘎浼般€佹灦鏋勫璁?|
+| **Task-Executor** | 瀛愪唬鐞?| 浠ｇ爜缂栧啓锛堝悎鍚岃寖鍥村唴锛?|
+| **Builder** | 瀛愪唬鐞?| 鏋勫缓銆侀儴缃?|
+| **Code-Reviewer** | 瀛愪唬鐞?| 浠ｇ爜璐ㄩ噺瀹℃煡 |
+| **Retro** | 瀛愪唬鐞?| 澶嶇洏銆佺害鏉熸洿鏂般€佷簨鏁呰褰?|
+| **Tester** | 瀛愪唬鐞?| 缁熶竴娴嬭瘯锛氬崟鍏冩祴璇曘€丒2E娴嬭瘯銆乁I鍐掔儫娴嬭瘯 |
 
-### 2. 📜 合同机制（Contract）
+### 2. 馃摐 鍚堝悓鏈哄埗锛圕ontract锛?
+鎵€鏈変唬鐮佷慨鏀?*蹇呴』鍏堝垱寤轰换鍔″悎鍚?*銆傚悎鍚屾槸涓€浠?JSON 鏂囦欢锛屽畾涔変簡淇敼鑼冨洿銆佺害鏉熻鍒欍€侀獙璇佹爣鍑嗗拰鍔熻兘瑕嗙洊娓呭崟銆傛湭缁忓悎鍚屾巿鏉冪殑淇敼灏嗚 Hook 闂ㄧ绯荤粺鎷︽埅銆?
+- 鍚堝悓鏂囦欢瀛樻斁浜?`.opencode/contracts/` 鐩綍
+- 閬靛惊 JSON Schema 鏍￠獙锛坄contract-schema.json`锛?- 鏈夋晥鏈?30 鍒嗛挓锛岃繃鏈熼渶閲嶆柊鍒涘缓
 
-所有代码修改**必须先创建任务合同**。合同是一份 JSON 文件，定义了修改范围、约束规则、验证标准和功能覆盖清单。未经合同授权的修改将被 Hook 门禁系统拦截。
+### 3. 馃洝锔?Hook 鎶ゆ爮绯荤粺
 
-- 合同文件存放于 `.opencode/contracts/` 目录
-- 遵循 JSON Schema 校验（`contract-schema.json`）
-- 有效期 30 分钟，过期需重新创建
+浠诲姟鎵ц鍓?鍚庣殑鎻掓々妫€鏌ョ偣锛屽垎涓轰笁灞傦細
 
-### 3. 🛡️ Hook 护栏系统
-
-任务执行前/后的插桩检查点，分为三层：
-
-| 层级 | 执行顺序 | 示例 |
+| 灞傜骇 | 鎵ц椤哄簭 | 绀轰緥 |
 |------|:--------:|------|
-| 🌐 全局钩子 | 最先执行 | `workspace-clean`、`diff-size-guard` |
-| 🤖 Agent 特定钩子 | 中间执行 | `resource-guard`、`file-lock-check` |
-| 📄 合同钩子 | 最后执行 | `pre-model-check`、`post-edit-verify` |
+| 馃寪 鍏ㄥ眬閽╁瓙 | 鏈€鍏堟墽琛?| `workspace-clean`銆乣diff-size-guard` |
+| 馃 Agent 鐗瑰畾閽╁瓙 | 涓棿鎵ц | `resource-guard`銆乣file-lock-check` |
+| 馃搫 鍚堝悓閽╁瓙 | 鏈€鍚庢墽琛?| `pre-model-check`銆乣post-edit-verify` |
 
-每个 Hook 返回 `PASS` / `BLOCK` / `WARN` 结果，任一 `BLOCK` 将中断流程并触发诊断。
+姣忎釜 Hook 杩斿洖 `PASS` / `BLOCK` / `WARN` 缁撴灉锛屼换涓€ `BLOCK` 灏嗕腑鏂祦绋嬪苟瑙﹀彂璇婃柇銆?
+### 4. 馃彈锔?涓夊眰鏋舵瀯绾︽潫
 
-### 4. 🏗️ 三层架构约束
-
-强制单向依赖规则，禁止反向和平层交叉依赖：
-
+寮哄埗鍗曞悜渚濊禆瑙勫垯锛岀姝㈠弽鍚戝拰骞冲眰浜ゅ弶渚濊禆锛?
 ```
-Layer 3: 前端/UI层 → Layer 2: 业务逻辑层 → Layer 1: 运行时层
+Layer 3: 鍓嶇/UI灞?鈫?Layer 2: 涓氬姟閫昏緫灞?鈫?Layer 1: 杩愯鏃跺眰
 ```
 
-- ❌ 不允许 Layer 1 调用 Layer 2
-- ❌ 不允许 Layer 2 直接调用 Layer 3
-- ❌ 不允许 Layer 3 跨层直接调用 Layer 1
+- 鉂?涓嶅厑璁?Layer 1 璋冪敤 Layer 2
+- 鉂?涓嶅厑璁?Layer 2 鐩存帴璋冪敤 Layer 3
+- 鉂?涓嶅厑璁?Layer 3 璺ㄥ眰鐩存帴璋冪敤 Layer 1
 
-### 5. 🔗 全链路 Trace ID
+### 5. 馃敆 鍏ㄩ摼璺?Trace ID
 
-从任务开始即生成全局唯一的 UUID，贯穿全生命周期：
-
+浠庝换鍔″紑濮嬪嵆鐢熸垚鍏ㄥ眬鍞竴鐨?UUID锛岃疮绌垮叏鐢熷懡鍛ㄦ湡锛?
 ```
-Analyzer → 合同 → Task-Executor → Code-Reviewer → Builder → Retro
+Analyzer 鈫?鍚堝悓 鈫?Task-Executor 鈫?Code-Reviewer 鈫?Builder 鈫?Retro
 ```
 
-所有子 Agent 的交接报告、审查报告、诊断报告、复盘报告均携带同一 Trace ID，确保全链路可追溯。
+鎵€鏈夊瓙 Agent 鐨勪氦鎺ユ姤鍛娿€佸鏌ユ姤鍛娿€佽瘖鏂姤鍛娿€佸鐩樻姤鍛婂潎鎼哄甫鍚屼竴 Trace ID锛岀‘淇濆叏閾捐矾鍙拷婧€?
+### 6. 馃攧 鑷姩淇寰幆
 
-### 6. 🔄 自动修复循环
+浠ｇ爜瀹℃煡鍙戠幇闂鍚庤嚜鍔ㄨЕ鍙戜慨澶嶆祦绋嬶細
 
-代码审查发现问题后自动触发修复流程：
-
-- Code-Reviewer 发现问题 → Analyzer 分析修复策略
-- 生成 `fix_contract` → Task-Executor 执行修复
-- 最多重试 **3 次**
-- 超过 3 次则升级为失败，加载 crash-doctor skill 诊断，委派 Retro 记录
+- Code-Reviewer 鍙戠幇闂 鈫?Analyzer 鍒嗘瀽淇绛栫暐
+- 鐢熸垚 `fix_contract` 鈫?Task-Executor 鎵ц淇
+- 鏈€澶氶噸璇?**3 娆?*
+- 瓒呰繃 3 娆″垯鍗囩骇涓哄け璐ワ紝鍔犺浇 crash-doctor skill 璇婃柇锛屽娲?Retro 璁板綍
 
 ---
 
-## 🔧 完整工作流
-
+## 馃敡 瀹屾暣宸ヤ綔娴?
 ```
-用户任务
-    │
-    ▼
-┌──────────────┐
-│  Analyzer 分析 │  只读分析任务范围、约束、风险（多方案对比）
-└──────┬───────┘
-       ▼
-┌──────────────┐
-│  生成合同     │  定义 files_to_modify / constraints / verification
-└──────┬───────┘
-       ▼
-┌──────────────┐
-│  验证合同     │  JSON Schema 校验 + 时效性检查
-└──────┬───────┘
-       ▼
-┌──────────────┐
-│  前置 Hook    │  全局 → Agent 特定 → 合同钩子（三层）
-└──────┬───────┘
-       ▼
-┌──────────────┐
-│  执行代码     │  Task-Executor 按合同修改指定文件
-└──────┬───────┘
-       ▼
-┌──────────────┐
-│  后置 Hook    │  安全扫描、架构检查、熵清理
-└──────┬───────┘
-       ▼
-┌──────────────┐
-│  代码审查     │  Code-Reviewer 逐文件审查
-└──────┬───────┘
-       ▼
-  ┌─────┴─────┐
-  │ 通过       │  不通过（≤3次自动修复循环）
-  └─────┬─────┘
-        ▼
-┌──────────────┐
-│  构建验证     │  Builder 构建（条件触发）
-└──────┬───────┘
-       ▼
-┌──────────────┐
-│  复盘 Retro   │  约束更新、事故记录（必须执行）
-└──────┬───────┘
-       ▼
-┌──────────────┐
-│  Git 提交     │  复盘确认通过后执行
-└──────────────┘
-```
+鐢ㄦ埛浠诲姟
+    鈹?    鈻?鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹? Analyzer 鍒嗘瀽 鈹? 鍙鍒嗘瀽浠诲姟鑼冨洿銆佺害鏉熴€侀闄╋紙澶氭柟妗堝姣旓級
+鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹?       鈻?鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹? 鐢熸垚鍚堝悓     鈹? 瀹氫箟 files_to_modify / constraints / verification
+鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹?       鈻?鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹? 楠岃瘉鍚堝悓     鈹? JSON Schema 鏍￠獙 + 鏃舵晥鎬ф鏌?鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹?       鈻?鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹? 鍓嶇疆 Hook    鈹? 鍏ㄥ眬 鈫?Agent 鐗瑰畾 鈫?鍚堝悓閽╁瓙锛堜笁灞傦級
+鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹?       鈻?鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹? 鎵ц浠ｇ爜     鈹? Task-Executor 鎸夊悎鍚屼慨鏀规寚瀹氭枃浠?鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹?       鈻?鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹? 鍚庣疆 Hook    鈹? 瀹夊叏鎵弿銆佹灦鏋勬鏌ャ€佺喌娓呯悊
+鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹?       鈻?鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹? 浠ｇ爜瀹℃煡     鈹? Code-Reviewer 閫愭枃浠跺鏌?鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹?       鈻?  鈹屸攢鈹€鈹€鈹€鈹€鈹粹攢鈹€鈹€鈹€鈹€鈹?  鈹?閫氳繃       鈹? 涓嶉€氳繃锛堚墹3娆¤嚜鍔ㄤ慨澶嶅惊鐜級
+  鈹斺攢鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹?        鈻?鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹? 鏋勫缓楠岃瘉     鈹? Builder 鏋勫缓锛堟潯浠惰Е鍙戯級
+鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹?       鈻?鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹? 澶嶇洏 Retro   鈹? 绾︽潫鏇存柊銆佷簨鏁呰褰曪紙蹇呴』鎵ц锛?鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹?       鈻?鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹? Git 鎻愪氦     鈹? 澶嶇洏纭閫氳繃鍚庢墽琛?鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?```
 
 ---
 
-## 📁 项目目录结构
+## 馃搧 椤圭洰鐩綍缁撴瀯
 
 ```
 opencode-harness-template/
-├── opencode.jsonc              # OpenCode 主配置
-├── AGENTS.md                   # 工作流规范入口
-├── LICENSE                     # MIT 许可证
-├── README.md                   # 本文件
-├── .gitignore                  # Git 忽略规则
-└── .opencode/
-    ├── agents/                 # Agent 提示词文件（7 个）
-    ├── constraints/            # 约束规则文档
-    │   ├── arch-layering.md    # 三层架构依赖规则
-    │   ├── contract-mechanism.md # 合同机制与生命周期
-    │   └── tech-stack/         # 技术栈约束模板
-    ├── contracts/              # 任务合同（运行时文件）
-    │   └── contract-schema.json # 合同 JSON Schema 模板
-    ├── hooks/                  # Hook 护栏脚本
-    ├── skills/                 # 技能文档（15 个）
-    ├── scripts/                # 工具脚本
-    ├── tools/                  # 验证工具
-    └── rules/                  # 规则文件
+鈹溾攢鈹€ opencode.jsonc              # OpenCode 涓婚厤缃?鈹溾攢鈹€ AGENTS.md                   # 宸ヤ綔娴佽鑼冨叆鍙?鈹溾攢鈹€ LICENSE                     # MIT 璁稿彲璇?鈹溾攢鈹€ README.md                   # 鏈枃浠?鈹溾攢鈹€ .gitignore                  # Git 蹇界暐瑙勫垯
+鈹斺攢鈹€ .opencode/
+    鈹溾攢鈹€ agents/                 # Agent 鎻愮ず璇嶆枃浠讹紙7 涓級
+    鈹溾攢鈹€ constraints/            # 绾︽潫瑙勫垯鏂囨。
+    鈹?  鈹溾攢鈹€ arch-layering.md    # 涓夊眰鏋舵瀯渚濊禆瑙勫垯
+    鈹?  鈹溾攢鈹€ contract-mechanism.md # 鍚堝悓鏈哄埗涓庣敓鍛藉懆鏈?    鈹?  鈹斺攢鈹€ tech-stack/         # 鎶€鏈爤绾︽潫妯℃澘
+    鈹溾攢鈹€ contracts/              # 浠诲姟鍚堝悓锛堣繍琛屾椂鏂囦欢锛?    鈹?  鈹斺攢鈹€ contract-schema.json # 鍚堝悓 JSON Schema 妯℃澘
+    鈹溾攢鈹€ hooks/                  # Hook 鎶ゆ爮鑴氭湰
+    鈹溾攢鈹€ skills/                 # 鎶€鑳芥枃妗ｏ紙15 涓級
+    鈹溾攢鈹€ scripts/                # 宸ュ叿鑴氭湰
+    鈹溾攢鈹€ tools/                  # 楠岃瘉宸ュ叿
+    鈹斺攢鈹€ rules/                  # 瑙勫垯鏂囦欢
 ```
 
 ---
 
-## 🚀 快速开始
-
-1. **安装 [OpenCode](https://opencode.ai/)**（如果尚未安装）
-2. 将本项目中的 `opencode.jsonc` 放入你的项目根目录
-3. 按需调整 `.opencode/constraints/` 中的约束规则
-4. 所有任务自动通过 **Coordinator** 委派，无需手动调用子 Agent
-
-### 通过 CLI 一键初始化
-
-```bash
-npx create-opencode-harness
-```
-
-交互式选择技术栈后，CLI 会自动拉取模板并完成所有占位符替换，无需手动配置。
-
-> ⚠️ 本项目为通用工作流模板，具体技术栈（前端、后端、构建工具等）待项目初始化后填充。
+## 馃殌 蹇€熷紑濮?
+1. **瀹夎 [OpenCode](https://opencode.ai/)**锛堝鏋滃皻鏈畨瑁咃級
+2. 灏嗘湰椤圭洰涓殑 `opencode.jsonc` 鏀惧叆浣犵殑椤圭洰鏍圭洰褰?3. 鎸夐渶璋冩暣 `.opencode/constraints/` 涓殑绾︽潫瑙勫垯
+4. 鎵€鏈変换鍔¤嚜鍔ㄩ€氳繃 **Coordinator** 濮旀淳锛屾棤闇€鎵嬪姩璋冪敤瀛?Agent
 
 ---
 
-## 📖 约束规则索引
+## 馃摉 绾︽潫瑙勫垯绱㈠紩
 
-| 文档 | 路径 | 说明 |
+| 鏂囨。 | 璺緞 | 璇存槑 |
 |------|------|------|
-| 架构分层约束 | `.opencode/constraints/arch-layering.md` | 三层架构单向依赖规则 |
-| 合同机制约束 | `.opencode/constraints/contract-mechanism.md` | 合同生命周期、格式、Hook 目录 |
+| 鏋舵瀯鍒嗗眰绾︽潫 | `.opencode/constraints/arch-layering.md` | 涓夊眰鏋舵瀯鍗曞悜渚濊禆瑙勫垯 |
+| 鍚堝悓鏈哄埗绾︽潫 | `.opencode/constraints/contract-mechanism.md` | 鍚堝悓鐢熷懡鍛ㄦ湡銆佹牸寮忋€丠ook 鐩綍 |
 
 ---
 
-## 📄 许可证
-
-本项目采用 **MIT License** 开源。
-
+## 馃搫 璁稿彲璇?
+鏈」鐩噰鐢?**MIT License** 寮€婧愩€?
 ```
 MIT License
 
@@ -201,13 +131,12 @@ Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files...
 ```
 
-完整内容请参见 [LICENSE](LICENSE) 文件。
-
+瀹屾暣鍐呭璇峰弬瑙?[LICENSE](LICENSE) 鏂囦欢銆?
 ---
 
-## 🏷️ 相关资源
+## 馃彿锔?鐩稿叧璧勬簮
 
-- [OpenCode 官方文档](https://opencode.ai/docs) — 了解更多关于 OpenCode 的配置和使用
-- [AGENTS.md](AGENTS.md) — 工作流规范详细定义
-- `.opencode/agents/` — 各 Agent 提示词定义
-- `.opencode/skills/` — 技能文档集合
+- [OpenCode 瀹樻柟鏂囨。](https://opencode.ai/docs) 鈥?浜嗚В鏇村鍏充簬 OpenCode 鐨勯厤缃拰浣跨敤
+- [AGENTS.md](AGENTS.md) 鈥?宸ヤ綔娴佽鑼冭缁嗗畾涔?- `.opencode/agents/` 鈥?鍚?Agent 鎻愮ず璇嶅畾涔?- `.opencode/skills/` 鈥?鎶€鑳芥枃妗ｉ泦鍚?
+- [AGENTS.md](AGENTS.md) 鈥?宸ヤ綔娴佽鑼冭缁嗗畾涔?- `.opencode/agents/` 鈥?鍚?Agent 鎻愮ず璇嶅畾涔?- `.opencode/skills/` 鈥?鎶€鑳芥枃妗ｉ泦鍚?
+
