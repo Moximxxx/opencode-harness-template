@@ -1,4 +1,4 @@
-import type { Plugin } from "@opencode-ai/plugin"
+﻿import type { Plugin } from "@opencode-ai/plugin"
 import { readdirSync, readFileSync, existsSync } from "fs"
 import { join, resolve } from "path"
 
@@ -14,6 +14,7 @@ import { join, resolve } from "path"
  * 白名单：.opencode/contracts/ 下的文件免除检查（允许写入合同文件）
  */
 export const ContractEnforcer: Plugin = async ({ directory, worktree }) => {
+  const projectRoot = worktree || directory
   return {
     "tool.execute.before": async (input, output) => {
       // 只拦截编辑类操作
@@ -45,7 +46,7 @@ export const ContractEnforcer: Plugin = async ({ directory, worktree }) => {
       for (const contract of activeContracts) {
         const files = contract.files_to_modify || []
         for (const f of files) {
-          if (isPathMatch(f as string, targetFile)) {
+          if (isPathMatch(f as string, targetFile, projectRoot)) {
             foundContract = contract.task_id
             break
           }
@@ -56,7 +57,7 @@ export const ContractEnforcer: Plugin = async ({ directory, worktree }) => {
             if (otherContract.task_id === contract.task_id) continue
             const otherFiles = otherContract.files_to_modify || []
             for (const f of otherFiles) {
-              if (isPathMatch(f as string, targetFile)) {
+              if (isPathMatch(f as string, targetFile, projectRoot)) {
                 lockingContracts.push(otherContract.task_id)
                 break
               }
@@ -102,21 +103,34 @@ function extractTargetFile(input: any, output: any): string | null {
   return null
 }
 
-/** 标准化路径：反斜杠转正斜杠，去除 ./ 和 ../ 前缀 */
-function normalizePath(p: string): string {
-  return p
-    .replace(/\\/g, "/")
+/** 标准化路径：处理 Windows 绝对路径、反斜杠、../ 等 */
+function normalizePath(p: string, projectRoot?: string): string {
+  let result = p.replace(/\\/g, "/")
+  
+  // 如果是 Windows 绝对路径（如 D:/code/project/src/file.ts）
+  // 且提供了 projectRoot，则转换为相对路径
+  if (projectRoot && /^[A-Za-z]:\//.test(result)) {
+    const normalizedRoot = projectRoot.replace(/\\/g, "/").replace(/\/+$/, "")
+    if (result.toLowerCase().startsWith(normalizedRoot.toLowerCase() + "/")) {
+      result = result.slice(normalizedRoot.length + 1)
+    }
+  }
+  
+  // 去除通用前缀
+  result = result
     .replace(/^\.\//, "")
     .replace(/\.\.\//g, "")
     .replace(/\/+/g, "/")
     .replace(/^\/+/, "")
+  
+  return result
 }
 
 /** 路径匹配：支持精确匹配和通配符匹配 */
-function isPathMatch(pattern: string, filePath: string): boolean {
-  // 路径标准化：去除 \、./、../、多余斜杠
+function isPathMatch(pattern: string, filePath: string, projectRoot?: string): boolean {
+  // 路径标准化：去除 Windows 绝对路径、\、./、../、多余斜杠
   const normPattern = normalizePath(pattern)
-  const normPath = normalizePath(filePath)
+  const normPath = normalizePath(filePath, projectRoot)
   
   // 精确匹配
   if (normPattern === normPath) return true
